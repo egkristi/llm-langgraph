@@ -74,13 +74,27 @@ uv add streamlit langchain-core langchain-community langgraph ollama
 
 ## Running the Application
 
+Always use the following command to run the application with UV for proper dependency management:
+
 ```bash
 uv run streamlit run src/app.py
 ```
 
-To stop the app:
+To stop the application:
 ```bash
 pkill -f "streamlit run" || echo "No running Streamlit processes found"
+```
+
+### Convenience Scripts
+
+For easier startup and shutdown, you can use the provided scripts:
+
+```bash
+# Start the application
+./run.sh
+
+# Stop the application
+./stop.sh
 ```
 
 ## Using the Application
