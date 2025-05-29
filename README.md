@@ -11,6 +11,7 @@ A Streamlit application that leverages LangGraph to create multi-agent conversat
 - **Agent Memory**: Conversation history for contextual responses
 - **Persistent Agents & Group Chats**: Agents and group chat configurations are automatically saved and can be reused across sessions
 - **Configuration Management**: Save and load agent configurations
+- **Conversation History**: All conversations are automatically saved to the 'conversations' folder and can be reloaded later
 - **Dynamic Tools**: Different tools assigned based on agent type
 - **Debug Mode**: Enable detailed logging and performance metrics
 
@@ -61,10 +62,11 @@ pkill -f "streamlit run" || echo "No running Streamlit processes found"
 2. **Create Agents**: Configure and create agents with different specialties
 3. **Setup Group Chat**: Select multiple agents to participate in a group chat
    - **Enable Consensus Mode**: Check "Require Consensus" to have agents discuss until agreement
-   - **Set Discussion Rounds**: Choose how many rounds of discussion to allow (1-5)
+   - **Set Discussion Rounds**: Choose how many rounds of discussion to allow (1-99)
    - **Add a Critic or Manager**: For best results in consensus mode, include a Critic or create a Manager agent
 4. **Chat Interface**: Interact with your agents through the main chat interface
-5. **Save Configuration**: Save your agent configurations for future use
+5. **Access Saved Conversations**: Open the Group Chat Management section and go to the Conversations tab to browse, filter, and reload past conversations
+6. **Save Configuration**: Save your agent configurations for future use
 
 ## Agent Types
 
@@ -91,3 +93,15 @@ This approach is particularly effective for complex questions that benefit from 
 - **Custom Prompts**: Define your own agent personalities
 - **Tool Integration**: Agents have access to different tools based on their type
 - **Performance Metrics**: Track response times in debug mode
+
+## Conversation Management
+
+The application includes a robust conversation management system:
+
+- **Automatic Saving**: All conversations are automatically saved as JSON files in the 'conversations' folder
+- **Conversation Browser**: Browse and filter past conversations by group chat name
+- **Metadata Storage**: Each conversation file includes metadata about participants and settings
+- **Conversation Reloading**: Reload any past conversation to continue where you left off
+- **Preview Feature**: Preview conversation content before loading
+
+All saved conversations are accessible through the "Conversations" tab in the Group Chat Management section, where you can filter, browse, and reload past discussions.

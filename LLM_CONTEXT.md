@@ -34,11 +34,22 @@ uv add streamlit langchain ollama
 
 ### Additional Features:
 
-- Conversation saving
-- Configuration import/export
-- Response timing
-- Error handling
-- Auto-save option
+- **Conversation Management**:
+  - Automatic saving of all conversations to JSON files in the 'conversations' folder
+  - Conversation browsing and filtering by group chat
+  - Conversation reloading for continuing past discussions
+  - Metadata storage including agent participants and chat settings
+- **Group Chat Management**:
+  - Save and load group chat configurations
+  - Auto-loading of the most recent active group chat
+  - Fallback creation of default group chats when needed
+- **Configuration Management**:
+  - Configuration import/export
+  - Auto-save of all settings
+- **Diagnostic Features**:
+  - Response timing
+  - Error handling
+  - Debug mode
 
 ### Ollama Configuration:
 
