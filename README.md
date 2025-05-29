@@ -16,6 +16,11 @@ A Streamlit application that leverages LangGraph to create multi-agent conversat
 - **Conversation History**: All conversations are automatically saved to the 'conversations' folder and can be reloaded later
 - **Dynamic Tools**: Different tools assigned based on agent type
 - **Debug Mode**: Enable detailed logging and performance metrics
+- **Secure Docker Execution**: All code is executed exclusively in isolated Docker containers with advanced security controls
+- **Enhanced Error Reporting**: Comprehensive error detection and reporting for Python exceptions and other execution issues
+- **Real-time Response Streaming**: See agent responses as they're generated for better interactivity
+- **Result Verification**: Code Runner agent verifies mathematical results against known values
+- **Persistent Workspace System**: Each group chat has its own workspace with code, data, and output folders
 
 ## System Architecture
 
@@ -205,15 +210,18 @@ All saved conversations are accessible through the "Conversations" tab in the Gr
 
 ## Docker Code Runner
 
-The application includes a Code Runner agent that can safely execute code inside Docker containers:
+The application includes a Code Runner agent that safely executes code inside Docker containers with improved error reporting and result verification:
 
 ```mermaid
 flowchart TD
     User[User] -->|"Submit Code"| Agent[Code Runner Agent]
     Agent -->|"Analyze Code"| CheckCode[Validate Code Safety]
-    CheckCode -->|"Safe to Execute"| Docker[Docker Container]
+    CheckCode -->|"Save to Workspace"| Workspace[(Group Chat Workspace)]
+    Workspace -->|"Load from"| Docker[Docker Container]
     Docker -->|"Isolated Execution"| Results[Execution Results]
-    Results -->|"Formatted Response"| User
+    Results -->|"Error Detection"| Validation[Result Validation]
+    Validation -->|"Result Verification"| Report[Verification Report]
+    Report -->|"Formatted Response"| User
     
     subgraph "Security Features"
         NS[No Network Access]
@@ -224,7 +232,14 @@ flowchart TD
         CAP[Dropped Capabilities]
     end
     
+    subgraph "Workspace System"
+        CodeDir[code/ Directory]
+        DataDir[data/ Directory]
+        OutputDir[output/ Directory]
+    end
+    
     Docker --> Security
+    Workspace --> WorkspaceSystem
 ```
 
 ### Features
@@ -233,7 +248,20 @@ flowchart TD
 - **Secure Execution**: All code runs in isolated, constrained Docker containers
 - **Security Controls**: No network access, limited resources, read-only filesystem
 - **Runtime Management**: List and terminate running code executions
-- **Error Analysis**: Detailed output and error messages with suggestions for fixing issues
+- **Enhanced Error Detection**: Comprehensive detection of Python exceptions and other execution issues
+- **Result Verification**: Mathematical results are verified against known values (Pi, e, etc.)
+- **Detailed Feedback**: Execution results include accuracy checks and suggested improvements
+- **Real-time Streaming**: See execution results as they're generated
+
+### Workspace System
+
+Each group chat has a persistent workspace with three directories:
+
+- **code/**: For source code files that can be executed
+- **data/**: For input data, configuration files, and other resources
+- **output/**: For execution results and generated outputs
+
+The workspace system ensures that files persist between conversations, allowing for iterative development and testing.
 
 ### Requirements
 
@@ -245,4 +273,4 @@ flowchart TD
 1. Create a Code Runner agent in the Agent Configuration section
 2. Include the agent in a group chat
 3. Submit code to run by asking the agent to execute it
-4. Receive results, error messages, and suggestions
+4. Receive results, error analysis, and verification of mathematical accuracy
