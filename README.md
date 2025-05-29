@@ -2,7 +2,8 @@
 
 A Streamlit application that leverages LangGraph to create multi-agent conversations with local LLM models served by Ollama. This application allows you to create and configure multiple AI agents with different personalities and capabilities, then have them collaborate in a group chat to solve problems.
 
-> 📘 **For Developers**: For more technical details and implementation notes, see [LLM_CONTEXT.md](LLM_CONTEXT.md)
+> 📘 **For Developers**: For technical details and implementation notes, see [LLM_CONTEXT.md](LLM_CONTEXT.md)  
+> 🔧 **New Users**: For detailed installation instructions across all platforms, see [INSTALL.md](INSTALL.md)
 
 ## Features
 
@@ -52,7 +53,9 @@ graph TD
 - Ollama installed and running
 - Python >= 3.13
 - uv >= 0.5.0
-- docker >= 25.0.2
+- Docker >= 25.0.2
+
+For detailed installation instructions for all prerequisites on macOS, Linux, and Windows, please refer to the [INSTALL.md](INSTALL.md) guide.
 
 ## Setup
 
