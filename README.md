@@ -32,20 +32,36 @@ graph TD
     WebUI <--> |Creates/Selects| Agents[Agent Factory]
     WebUI <--> |Sets up| GroupChat[Group Chat]
     WebUI <--> |Views/Loads| Convos[Conversation Manager]
+    WebUI <--> |Toggles| Debug[Debug Mode]
+    WebUI <--> |Browses| Workspace[Workspace Manager]
     
     Config --> |Loads/Saves| ConfigFiles[(Config Files)]
     Agents --> |Uses| LLMs[LLM Models]
     GroupChat --> |Coordinates| Agents
+    GroupChat --> |Maintains| Context[Persistent Context]
     GroupChat --> |Processes| Messages[Message History]
+    Context --> |Enables| FollowUp[Follow-up Questions]
     Convos --> |Stores| ConvoFiles[(Conversation Files)]
+    Workspace --> |Manages| WorkFiles[Code, Data, Output]
     
     LLMs <--> |API Calls| Ollama[Ollama Service]
+    
+    subgraph Execution Environment
+        Docker[Docker Container] --> |Executes| Code[User Code]
+        Docker --> |Enforces| Security[Security Controls]
+        Docker --> |Captures| Output[Execution Results]
+        Docker --> |Verifies| Results[Result Accuracy]
+    end
     
     subgraph Local Environment
         ConfigFiles
         ConvoFiles
+        WorkFiles
         Ollama
     end
+    
+    Debug --> |Shows| DebugInfo[System Information]
+    Debug --> |Displays| Timing[Performance Metrics]
 ```
 
 ## Prerequisites
@@ -139,33 +155,46 @@ sequenceDiagram
     participant Agent1
     participant Agent2
     participant Agent3
+    participant Context
     
-    User->>Manager: Ask a question
-    Manager->>Agent1: Forward question
-    Manager->>Agent2: Forward question
-    Manager->>Agent3: Forward question
+    User->>Context: Ask question
+    Context->>Manager: Forward question with history
     
-    Agent1-->>Manager: Initial response
-    Agent2-->>Manager: Initial response
-    Agent3-->>Manager: Initial response
+    par Forward to agents with context
+        Manager->>Agent1: Question + prior context
+        Manager->>Agent2: Question + prior context
+        Manager->>Agent3: Question + prior context
+    end
+    
+    Note over Agent1,Agent3: Each agent has access to<br/>all previous conversation context
+    
+    Agent1-->>Context: Initial response
+    Agent2-->>Context: Initial response
+    Agent3-->>Context: Initial response
     
     loop Until consensus or max rounds
         Manager->>Manager: Evaluate consensus
-        alt No consensus yet
-            Manager->>Agent1: Share others' responses
-            Manager->>Agent2: Share others' responses
-            Manager->>Agent3: Share others' responses
+        alt Consensus not reached
+            Manager->>Context: Request refinement
+            Context->>Agent1: Request with all previous responses
+            Context->>Agent2: Request with all previous responses
+            Context->>Agent3: Request with all previous responses
             
-            Agent1-->>Manager: Refined response
-            Agent2-->>Manager: Refined response
-            Agent3-->>Manager: Refined response
+            Agent1-->>Context: Refined response
+            Agent2-->>Context: Refined response
+            Agent3-->>Context: Refined response
         else Consensus reached
-            Manager-->>User: Final consensus response
+            Manager-->>Context: Final consensus reached
+            Context-->>User: Final consensus response
         end
     end
     
     Note over Manager: If max rounds reached<br>without consensus
-    Manager-->>User: Best response with<br>explanation
+    
+    Manager-->>Context: Select best response
+    Context-->>User: Best response with<br>explanation
+    
+    Note over Context: Chat context persists for<br>follow-up questions
 ```
 
 - **Discussion Rounds**: Agents refine their thoughts over multiple rounds of conversation
@@ -189,19 +218,33 @@ The application includes a robust conversation management system:
 ```mermaid
 graph TD
     Chat[Chat Interface] -->|User Sends Message| Process[Process Message]
+    Process -->|Maintain Context| Context[Persistent Context]
+    Context -->|Provide History| Agents[Agent Processing]
+    Agents -->|Real-time Stream| Stream[Streaming Responses]
+    Stream -->|Display| UI[User Interface]
+    
     Process -->|Agent Responses| Update[Update Chat History]
     Update -->|Auto-Save| Save[Save Conversation]
     Save -->|JSON File| Storage[(Conversations Folder)]
     
-    UI[Conversations Tab] -->|Browse| List[List Conversations]
-    List -->|Read| Storage
-    UI -->|Filter by Group Chat| Filter[Filter Conversations]
-    UI -->|Select| View[View Conversation]
-    View -->|Load from| Storage
-    UI -->|Load| Reload[Reload Conversation]
-    Reload -->|Restore to| Chat
+    subgraph History Management
+        UI_Tab[Conversations Tab] -->|Browse| List[List Conversations]
+        List -->|Read| Storage
+        UI_Tab -->|Filter| Filter[Filter Conversations]
+        UI_Tab -->|Select| View[View Conversation]
+        View -->|Load from| Storage
+        UI_Tab -->|Reload| Reload[Reload Conversation]
+        Reload -->|Restore to| Chat
+    end
     
-    Storage -->|Structured Format| Format["JSON Structure:<br>- Metadata<br>- Messages<br>- Timestamps<br>- Agent Info"]
+    subgraph Debug Features
+        DebugMode[Debug Mode] -->|Enable| Metrics[Performance Metrics]
+        DebugMode -->|Show| Config[Configuration Details]
+        DebugMode -->|Display| DockerStatus[Docker Status]
+        DebugMode -->|Expose| WorkspaceInfo[Workspace Information]
+    end
+    
+    Storage -->|Structured Format| Format["JSON Structure:<br>- Metadata<br>- Messages<br>- Timestamps<br>- Agent Info<br>- Context History"]
 ```
 
 - **Automatic Saving**: All conversations are automatically saved as JSON files in the 'conversations' folder
@@ -212,6 +255,42 @@ graph TD
 
 All saved conversations are accessible through the "Conversations" tab in the Group Chat Management section, where you can filter, browse, and reload past discussions.
 
+## Conversation Context Flow
+
+The system maintains conversation context between user interactions, allowing for natural follow-up questions:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant GroupChat
+    participant PersistentContext
+    participant Agents
+    
+    User->>GroupChat: Initial question
+    GroupChat->>PersistentContext: Store question
+    PersistentContext->>Agents: Forward question
+    Agents->>PersistentContext: Store responses
+    PersistentContext->>GroupChat: Deliver responses
+    GroupChat->>User: Show responses
+    
+    Note over PersistentContext: Context maintained between interactions
+    
+    User->>GroupChat: Follow-up question
+    GroupChat->>PersistentContext: Add to existing context
+    PersistentContext->>Agents: Forward question with full history
+    Note over Agents: Agents can reference prior questions & answers
+    Agents->>PersistentContext: Store new responses
+    PersistentContext->>GroupChat: Deliver responses with context
+    GroupChat->>User: Show contextual responses
+    
+    Note over User,GroupChat: This continues for multiple interactions
+```
+
+- **Context Preservation**: All user questions and agent responses are maintained in persistent memory
+- **Reference Resolution**: Follow-up questions can reference earlier parts of the conversation
+- **Contextual Understanding**: Agents can understand phrases like "it", "that", or "the code" in context
+- **Session Persistence**: Context is maintained even if the connection is temporarily lost
+
 ## Docker Code Runner
 
 The application includes a Code Runner agent that safely executes code inside Docker containers with improved error reporting and result verification:
@@ -220,14 +299,22 @@ The application includes a Code Runner agent that safely executes code inside Do
 flowchart TD
     User[User] -->|"Submit Code"| Agent[Code Runner Agent]
     Agent -->|"Analyze Code"| CheckCode[Validate Code Safety]
-    CheckCode -->|"Save to Workspace"| Workspace[(Group Chat Workspace)]
-    Workspace -->|"Load from"| Docker[Docker Container]
-    Docker -->|"Isolated Execution"| Results[Execution Results]
-    Results -->|"Error Detection"| Validation[Result Validation]
-    Validation -->|"Result Verification"| Report[Verification Report]
-    Report -->|"Formatted Response"| User
     
-    subgraph "Security Features"
+    subgraph "Workspace System"
+        CheckCode -->|"Save to Workspace"| CodeDir[code/ Directory]
+        CodeDir -->|"Read Input"| DataDir[data/ Directory]
+        CodeDir -->|"Write Results"| OutputDir[output/ Directory]
+    end
+    
+    Workspace[(Persistent Workspace)] -->|"Contains"| WorkspaceSystem
+    
+    CodeDir -->|"Mount Read-Only"| Docker[Docker Container]
+    DataDir -->|"Mount Read-Only"| Docker
+    OutputDir -->|"Mount Read-Write"| Docker
+    
+    Docker -->|"Isolated Execution"| ExecProcess[Execution Process]
+    
+    subgraph "Security Controls"
         NS[No Network Access]
         MEM[Memory Limits: 256MB]
         CPU[CPU Limits: 0.5 cores]
@@ -236,14 +323,23 @@ flowchart TD
         CAP[Dropped Capabilities]
     end
     
-    subgraph "Workspace System"
-        CodeDir[code/ Directory]
-        DataDir[data/ Directory]
-        OutputDir[output/ Directory]
-    end
+    Security -->|"Enforce"| Docker
     
-    Docker --> Security
-    Workspace --> WorkspaceSystem
+    ExecProcess -->|"Capture Output"| Results[Raw Results]
+    Results -->|"Error Detection"| ErrorCheck{Has Errors?}
+    
+    ErrorCheck -->|"Yes"| ErrorAnalysis[Error Analysis]
+    ErrorCheck -->|"No"| SuccessCheck[Success Validation]
+    
+    ErrorAnalysis -->|"Python Exception Detection"| FormatError[Format Error Report]
+    SuccessCheck -->|"Mathematical Validation"| ResultCheck{Results Accurate?}
+    
+    ResultCheck -->|"Yes"| FormatSuccess[Format Success Report]
+    ResultCheck -->|"No"| Correction[Add Correction Note]
+    
+    Correction -->|"Compare with Expected"| FormatSuccess
+    FormatError -->|"Detailed Feedback"| User
+    FormatSuccess -->|"Formatted Response"| User
 ```
 
 ### Features
