@@ -4,12 +4,14 @@ from pathlib import Path
 import json
 import time
 import os
+import subprocess
 from typing import Dict, List, Optional, Any
 
 from agents.agent_factory import create_agent
 from models.model_manager import ModelManager
 from graph.group_chat import create_group_chat
 from memory.conversation_memory import ConversationMemory
+from tools.docker_code_runner import docker_available
 from utils.config import (
     load_config, save_config, 
     load_agents, save_agents,
@@ -18,6 +20,9 @@ from utils.config import (
 from utils.conversation_manager import (
     save_conversation, load_conversation,
     list_conversations, get_conversation_filename
+)
+from utils.workspace_manager import (
+    get_workspace_path, list_files, read_file, get_workspace_info
 )
 
 # Helper function for auto-saving configuration
@@ -101,7 +106,8 @@ def activate_specific_group_chat(chat_name, chat_config):
             st.session_state.group_chat = create_group_chat(
                 selected_agents,
                 require_consensus=chat_config["require_consensus"],
-                max_rounds=chat_config["max_rounds"]
+                max_rounds=chat_config["max_rounds"],
+                group_chat_name=chat_name
             )
             st.session_state.active_group_chat = chat_name
             print(f"Successfully activated group chat: {chat_name}")
@@ -284,8 +290,9 @@ try:
                         selected_agents = {name: st.session_state.agents[name] for name in chat_config["agent_names"]}
                         st.session_state.group_chat = create_group_chat(
                             selected_agents,
-                            require_consensus=chat_config["require_consensus"],
-                            max_rounds=chat_config["max_rounds"]
+                            require_consensus=chat_config.get("require_consensus", False),
+                            max_rounds=chat_config.get("max_rounds", 3),
+                            group_chat_name=active_chat_name
                         )
                         st.session_state.active_group_chat = active_chat_name
                         print(f"Auto-activated group chat: {active_chat_name}")
@@ -500,56 +507,172 @@ with st.sidebar:
     
     # Ollama configuration
     st.subheader("Ollama Settings")
-    ollama_host = st.text_input("Ollama Host", value="http://localhost:11434")
-    
     # Connection status
     if st.session_state.ollama_connected:
         st.success("✓ Connected to Ollama")
-        # Display available models
-        st.write("Available models:")
-        for model in st.session_state.available_models:
-            st.write(f"- {model}")
     else:
         st.error("✗ Not connected to Ollama")
+    ollama_host = st.text_input("Ollama Host", value="http://localhost:11434")
     
     # Connect to Ollama button
     if st.button("Connect to Ollama"):
-        with st.spinner("Testing connection..."):
-            success, message = connect_to_ollama(ollama_host)
-            if success:
-                st.success(message)
-            else:
-                st.error(message)
-                if st.session_state.debug_mode:
-                    st.write("Try running 'ollama serve' in a terminal to start Ollama")
-
-    
-    # Debug mode toggle
-    st.session_state.debug_mode = st.checkbox("Debug Mode", value=st.session_state.debug_mode)
-    
-    # Model selection
-    st.subheader("Models")
-    if "available_models" in st.session_state:
-        default_model = st.selectbox("Default Model", st.session_state.available_models)
-        st.session_state.model_manager.set_default_model(default_model)
-    
-    # Pull new model
-    new_model = st.text_input("Pull New Model")
-    if st.button("Pull Model") and new_model:
-        with st.spinner(f"Pulling model {new_model}..."):
+        with st.spinner("Connecting to Ollama..."):
             try:
-                # Use the model_manager to pull the model
-                if st.session_state.model_manager.pull_model(new_model):
-                    # Update the available models list
-                    if new_model not in st.session_state.available_models:
-                        st.session_state.available_models.append(new_model)
-                    st.success(f"Successfully pulled {new_model}")
-                else:
-                    st.error(f"Failed to pull model {new_model}")
+                # Initialize model manager
+                model_manager = ModelManager()
+                st.session_state.model_manager = model_manager
+                
+                # Try to get available models
+                models = model_manager.list_available_models()
+                st.session_state.models = models
+                
+                # Get all models from models.json
+                all_models = model_manager.get_all_models()
+                st.session_state.all_models = all_models
+                
+                st.success(f"Connected to Ollama. Found {len(models)} models.")
             except Exception as e:
-                st.error(f"Failed to pull model: {str(e)}")
+                st.error(f"Error connecting to Ollama: {str(e)}")
                 if st.session_state.debug_mode:
                     st.exception(e)
+                    st.write("Try running 'ollama serve' in a terminal to start Ollama")
+
+    # Workspace file browser (collapsed by default)
+    with st.expander("Workspace Files", expanded=False):
+        # Get current group chat name
+        current_group_chat = st.session_state.get("active_group_chat", "Default Group Chat")
+        
+        # Dropdown to select group chat workspace
+        available_group_chats = list(st.session_state.get("all_saved_group_chats", {}).keys())
+        selected_workspace = st.selectbox(
+            "Select Workspace", 
+            options=available_group_chats,
+            index=available_group_chats.index(current_group_chat) if current_group_chat in available_group_chats else 0
+        )
+        
+        # Dropdown to select folder
+        folder_options = ["code", "data", "output"]
+        selected_folder = st.selectbox("Select Folder", options=folder_options)
+        
+        # Get workspace files
+        try:
+            workspace_path = get_workspace_path(selected_workspace)
+            files = list_files(selected_workspace, selected_folder)
+            
+            if files:
+                st.write(f"**Files in {selected_folder}/**")
+                
+                # Create a container for the file list
+                file_container = st.container()
+                
+                with file_container:
+                    for file in files:
+                        col1, col2 = st.columns([3, 1])
+                        
+                        with col1:
+                            st.write(f"{file['name']} ({file['size']} bytes)")
+                        
+                        with col2:
+                            # Create a download button for each file
+                            file_content = read_file(selected_workspace, file['name'], selected_folder)
+                            if file_content is not None:
+                                st.download_button(
+                                    label="📥",
+                                    data=file_content,
+                                    file_name=file['name'],
+                                    mime="text/plain",
+                                    key=f"download_{file['name']}"
+                                )
+            else:
+                st.info(f"No files in {selected_folder}/ folder")
+                
+            # Show workspace information
+            workspace_info = get_workspace_info(selected_workspace)
+            st.write("**Workspace Summary:**")
+            st.write(f"Total files: {workspace_info['total_files']}")
+            st.write(f"Size: {workspace_info['total_size']} bytes")
+            
+        except Exception as e:
+            st.error(f"Error loading workspace files: {str(e)}")
+            if st.session_state.debug_mode:
+                st.exception(e)
+
+
+    
+    # Model management section (collapsed by default)
+    with st.expander("Model Management", expanded=False):
+        if "model_manager" in st.session_state:
+            # Get all models
+            if "all_models" not in st.session_state:
+                all_models = st.session_state.model_manager.get_all_models()
+                st.session_state.all_models = all_models
+            else:
+                all_models = st.session_state.all_models
+            
+            installed_models = all_models["installed"]
+            recommended_models = all_models["recommended"]
+            
+            st.write("**Installed Models:**")
+            if installed_models:
+                for model in installed_models:
+                    st.write(f"- {model}")
+            else:
+                st.info("No models installed. Please connect to Ollama first.")
+            
+            st.divider()
+            st.write("**Recommended Models:**")
+            
+            # Create a container for the model list
+            model_container = st.container()
+            
+            with model_container:
+                for model_entry in recommended_models:
+                    # Extract model details
+                    if isinstance(model_entry, dict):
+                        model_name = model_entry.get("name", "")
+                        display_name = model_entry.get("display_name", model_name)
+                        description = model_entry.get("description", "")
+                    else:
+                        model_name = model_entry
+                        display_name = model_name
+                        description = ""
+                    
+                    # Check if model is installed
+                    is_installed = model_name in installed_models
+                    
+                    # Create a row for each model
+                    col1, col2 = st.columns([3, 1])
+                    
+                    with col1:
+                        if is_installed:
+                            st.write(f"**{display_name}** ✓")
+                        else:
+                            st.write(f"**{display_name}**")
+                        
+                        if description:
+                            st.write(f"*{description}*")
+                    
+                    with col2:
+                        # Add pull button for models not yet installed
+                        if not is_installed:
+                            if st.button(f"Pull", key=f"pull_{model_name}"):
+                                with st.spinner(f"Pulling {model_name}..."):
+                                    success = st.session_state.model_manager.pull_model(model_name)
+                                    if success:
+                                        st.success(f"Successfully pulled {model_name}")
+                                        # Update installed models
+                                        all_models = st.session_state.model_manager.get_all_models()
+                                        st.session_state.all_models = all_models
+                                        st.session_state.models = all_models["installed"]
+                                        st.rerun()
+                                    else:
+                                        st.error(f"Failed to pull {model_name}")
+        else:
+            st.info("Please connect to Ollama first to manage models.")
+            if st.button("Connect"):
+                st.rerun()
+
+
 
 # Make Agent Configuration collapsible and collapsed by default
 with st.expander("Agent Configuration", expanded=False):
@@ -558,7 +681,7 @@ with st.expander("Agent Configuration", expanded=False):
     with col1:
         new_agent_name = st.text_input("Agent Name")
     with col2:
-        agent_types = ["Assistant", "Researcher", "Coder", "Math Expert", "Critic", "Manager", "Custom"]
+        agent_types = ["Assistant", "Researcher", "Coder", "Math Expert", "Critic", "Manager", "Code Runner", "Custom"]
         new_agent_type = st.selectbox("Agent Type", agent_types)
     
     # Model selection for agent
@@ -576,25 +699,30 @@ with st.expander("Agent Configuration", expanded=False):
     # Create agent button
     if st.button("Create Agent"):
         if new_agent_name and new_agent_name not in st.session_state.agents:
-            with st.spinner(f"Creating agent {new_agent_name}..."):
-                try:
-                    agent = create_agent(
-                        name=new_agent_name,
-                        agent_type=new_agent_type,
-                        model=agent_model,
-                        custom_prompt=custom_prompt
-                    )
-                    st.session_state.agents[new_agent_name] = agent
-                    
-                    # Auto-save configuration when an agent is created
-                    _save_current_configuration()
-                    
-                    st.success(f"Agent {new_agent_name} created successfully")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Error creating agent: {str(e)}")
-                    if st.session_state.debug_mode:
-                        st.exception(e)
+            # Check for Docker availability if creating a Code Runner agent
+            if new_agent_type == "Code Runner" and not docker_available():
+                st.error("Docker is not available. Please ensure Docker is installed and running before creating a Code Runner agent.")
+                st.info("The Code Runner agent requires Docker to execute code safely in isolated containers.")
+            else:
+                with st.spinner(f"Creating agent {new_agent_name}..."):
+                    try:
+                        agent = create_agent(
+                            name=new_agent_name,
+                            agent_type=new_agent_type,
+                            model=agent_model,
+                            custom_prompt=custom_prompt
+                        )
+                        st.session_state.agents[new_agent_name] = agent
+                        
+                        # Auto-save configuration when an agent is created
+                        _save_current_configuration()
+                        
+                        st.success(f"Agent {new_agent_name} created successfully")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error creating agent: {str(e)}")
+                        if st.session_state.debug_mode:
+                            st.exception(e)
     
     # Display created agents
     if st.session_state.agents:
@@ -694,7 +822,8 @@ with tab1:
                             group_chat = create_group_chat(
                                 selected_agents,
                                 require_consensus=require_consensus,
-                                max_rounds=max_rounds
+                                max_rounds=max_rounds,
+                                group_chat_name=new_chat_name
                             )
                             
                             # Set it in session state
@@ -863,7 +992,8 @@ with tab2:
                         st.session_state.group_chat = create_group_chat(
                             selected_agents,
                             require_consensus=config["require_consensus"],
-                            max_rounds=config["max_rounds"]
+                            max_rounds=config["max_rounds"],
+                            group_chat_name=saved_chat
                         )
                         
                         # Save changes to all files
@@ -1060,22 +1190,109 @@ if user_input and st.session_state.group_chat:
         start_time = time.time()
         
         # Get response from group chat
+        # Create containers to hold conversation by rounds
+        round_containers = {}
+        max_rounds = st.session_state.group_chat.max_rounds
+        for i in range(1, max_rounds + 1):
+            round_containers[i] = st.container()
+        
+        # Create a container for system messages
+        system_container = st.container()
+        
+        # Initialize conversation state if not exists
+        if "conversation_state" not in st.session_state:
+            st.session_state.conversation_state = {
+                "messages": [],
+                "current_round": 0,
+                "is_thinking": False,
+                "displayed_messages": set()  # Track which messages have been displayed
+            }
+        
+        # Setup placeholder for thinking indicator
+        thinking_placeholder = st.empty()
+        
         try:
-            response = st.session_state.group_chat.run(user_input)
+            # Show thinking indicator
+            with thinking_placeholder:
+                if not st.session_state.conversation_state["is_thinking"]:
+                    st.session_state.conversation_state["is_thinking"] = True
+                    st.info("⏳ Agents are thinking, discussing or executing...")
             
-            for agent_name, agent_response in response.items():
+            # Define the callback function to collect messages
+            def message_callback(agent_name, message, round_num, is_evaluation=False, is_system=False):
+                # Create a unique message ID to track displayed messages
+                message_id = f"{agent_name}_{round_num}_{hash(message[:50])}"
+                
+                # Add message to conversation state
+                msg_obj = {
+                    "role": "assistant",
+                    "agent": agent_name,
+                    "content": message,
+                    "round": round_num,
+                    "is_evaluation": is_evaluation,
+                    "is_system": is_system,
+                    "id": message_id
+                }
+                st.session_state.conversation_state["messages"].append(msg_obj)
+                
+                # Update current round if higher
+                if round_num > st.session_state.conversation_state["current_round"]:
+                    st.session_state.conversation_state["current_round"] = round_num
+                
                 # Add to chat history
                 st.session_state.chat_history.append({
                     "role": "assistant", 
                     "agent": agent_name, 
-                    "content": agent_response
+                    "content": message,
+                    "round": round_num
                 })
                 
-                # Display response - use assistant icon with agent name in the message
-                with st.chat_message("assistant"):
-                    st.markdown(f"**{agent_name}:**")
-                    st.write(agent_response)
-                
+                # Display the message immediately if it hasn't been displayed yet
+                if message_id not in st.session_state.conversation_state["displayed_messages"]:
+                    # Mark as displayed
+                    st.session_state.conversation_state["displayed_messages"].add(message_id)
+                    
+                    # Display system messages in the system container
+                    if is_system:
+                        with system_container:
+                            st.info(message)
+                    else:
+                        # Display in the appropriate round container
+                        with round_containers[round_num]:
+                            # Show round header if this is the first message in this round
+                            if len([m for m in st.session_state.conversation_state["messages"] 
+                                   if m.get("round") == round_num and not m.get("is_system", False)]) == 1:
+                                st.markdown(f"### Round {round_num}")
+                            
+                            # Display the agent message
+                            with st.chat_message("assistant"):
+                                header = f"**{agent_name}:**"
+                                if is_evaluation:
+                                    header += " [Evaluation]"
+                                st.markdown(header)
+                                st.write(message)
+            
+            # Run the group chat with the callback
+            response = st.session_state.group_chat.run(user_input, callback=message_callback)
+            
+            # Clear thinking indicator
+            thinking_placeholder.empty()
+            st.session_state.conversation_state["is_thinking"] = False
+            
+            # Messages have already been displayed in real-time by the callback
+            # No need to display them again, but we'll log completion for debugging
+            if st.session_state.debug_mode:
+                print(f"Conversation complete. {len(st.session_state.conversation_state['messages'])} messages processed.")
+                print(f"Messages were displayed in real-time via the callback function.")
+            
+            # Reset conversation state for next interaction
+            st.session_state.conversation_state = {
+                "messages": [],
+                "current_round": 0,
+                "is_thinking": False,
+                "displayed_messages": set()  # Reset displayed messages tracking
+            }
+            
             # Display timing in debug mode
             if st.session_state.debug_mode:
                 elapsed_time = time.time() - start_time

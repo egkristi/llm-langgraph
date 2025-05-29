@@ -1,0 +1,117 @@
+{
+  "recommended_models": [
+    {
+      "name": "llama3",
+      "display_name": "Llama 3 (8B)",
+      "description": "Meta's Llama 3 (8B) model - general purpose language model",
+      "tags": [
+        "general",
+        "chat",
+        "reasoning"
+      ]
+    },
+    {
+      "name": "llama4",
+      "display_name": "Llama 4",
+      "description": "Meta's latest Llama 4 model with improved reasoning and instruction following",
+      "tags": [
+        "general",
+        "chat",
+        "reasoning",
+        "instruction"
+      ]
+    },
+    {
+      "name": "codellama",
+      "display_name": "Code Llama (7B)",
+      "description": "Specialized for code generation and analysis",
+      "tags": [
+        "code",
+        "programming"
+      ]
+    },
+    {
+      "name": "qwen3",
+      "display_name": "Qwen 3",
+      "description": "Alibaba Cloud's Qwen 3 foundation model with strong multilingual capabilities",
+      "tags": [
+        "general",
+        "chat",
+        "multilingual"
+      ]
+    },
+    {
+      "name": "mistral",
+      "display_name": "Mistral (7B)",
+      "description": "Mistral 7B language model - efficient and powerful",
+      "tags": [
+        "general",
+        "chat",
+        "reasoning"
+      ]
+    },
+    {
+      "name": "deepseek-r1",
+      "display_name": "DeepSeek R1",
+      "description": "DeepSeek's R1 research model with advanced reasoning capabilities",
+      "tags": [
+        "general",
+        "research",
+        "reasoning"
+      ]
+    },
+    {
+      "name": "gemma3",
+      "display_name": "Gemma (7B)",
+      "description": "Google's lightweight generative AI model",
+      "tags": [
+        "general",
+        "chat"
+      ]
+    },
+    {
+      "name": "orca-mini",
+      "display_name": "Orca Mini",
+      "description": "Smaller instruction-tuned model based on Llama architecture",
+      "tags": [
+        "general",
+        "instruction"
+      ]
+    },
+    {
+      "name": "phi",
+      "display_name": "Phi-2",
+      "description": "Microsoft's small language model with strong reasoning",
+      "tags": [
+        "reasoning",
+        "instruction"
+      ]
+    },
+    {
+      "name": "wizardcoder",
+      "display_name": "WizardCoder",
+      "description": "Specialized code generation model",
+      "tags": [
+        "code",
+        "programming"
+      ]
+    },
+    {
+      "name": "codegemma",
+      "display_name": "CodeGemma",
+      "description": "Google's code generation model based on Gemma",
+      "tags": [
+        "code",
+        "programming"
+      ]
+    }
+  ],
+  "installed_models": [
+    "qwen3",
+    "gemma3",
+    "devstral",
+    "mistral",
+    "codellama",
+    "llama3"
+  ]
+}

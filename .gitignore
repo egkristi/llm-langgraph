@@ -17,6 +17,7 @@ ENV/
 
 # Project specific
 conversations/
+workspaces/
 
 # IDE files
 .idea/

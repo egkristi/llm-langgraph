@@ -14,7 +14,7 @@
     "max_rounds": 20,
     "active": false
   },
-  "Default Group Chat": {
+  "Group Chat 2": {
     "agent_names": [
       "Manager",
       "William",
@@ -24,6 +24,37 @@
     "require_consensus": true,
     "max_rounds": 15,
     "created_at": "2025-05-29 12:17:27",
+    "active": true
+  },
+  "Coding Group Chat": {
+    "agent_names": [
+      "koder1",
+      "koder2",
+      "codeExecutor",
+      "Manager"
+    ],
+    "require_consensus": true,
+    "max_rounds": 15,
+    "created_at": "2025-05-29 13:37:34",
+    "active": true
+  },
+  "Coding Group Chat 2": {
+    "agent_names": [
+      "koder1",
+      "koder2",
+      "koder3",
+      "koder4",
+      "koder5",
+      "matematiker",
+      "kritiker",
+      "kreativ",
+      "codeExecutor",
+      "Manager",
+      "forsker"
+    ],
+    "require_consensus": true,
+    "max_rounds": 42,
+    "created_at": "2025-05-29 13:37:34",
     "active": true
   }
 }

@@ -116,6 +116,7 @@ For easier startup and shutdown, you can use the provided scripts:
 - **Coder**: Focuses on programming and code-related tasks
 - **Math Expert**: Specializes in mathematical problem solving
 - **Critic**: Provides critical analysis and feedback
+- **Code Runner**: Executes and tests code securely in Docker containers
 - **Custom**: Create your own agent with a custom prompt
 
 ## Consensus-Based Discussions
@@ -169,6 +170,7 @@ This approach is particularly effective for complex questions that benefit from 
 
 - **Custom Prompts**: Define your own agent personalities
 - **Tool Integration**: Agents have access to different tools based on their type
+- **Docker Code Execution**: Safely test and run code in isolated containers
 - **Performance Metrics**: Track response times in debug mode
 
 ## Conversation Management
@@ -200,3 +202,47 @@ graph TD
 - **Preview Feature**: Preview conversation content before loading
 
 All saved conversations are accessible through the "Conversations" tab in the Group Chat Management section, where you can filter, browse, and reload past discussions.
+
+## Docker Code Runner
+
+The application includes a Code Runner agent that can safely execute code inside Docker containers:
+
+```mermaid
+flowchart TD
+    User[User] -->|"Submit Code"| Agent[Code Runner Agent]
+    Agent -->|"Analyze Code"| CheckCode[Validate Code Safety]
+    CheckCode -->|"Safe to Execute"| Docker[Docker Container]
+    Docker -->|"Isolated Execution"| Results[Execution Results]
+    Results -->|"Formatted Response"| User
+    
+    subgraph "Security Features"
+        NS[No Network Access]
+        MEM[Memory Limits: 256MB]
+        CPU[CPU Limits: 0.5 cores]
+        RO[Read-Only Filesystem]
+        TO[Timeout: 10 seconds]
+        CAP[Dropped Capabilities]
+    end
+    
+    Docker --> Security
+```
+
+### Features
+
+- **Supported Languages**: Python, JavaScript, and Go
+- **Secure Execution**: All code runs in isolated, constrained Docker containers
+- **Security Controls**: No network access, limited resources, read-only filesystem
+- **Runtime Management**: List and terminate running code executions
+- **Error Analysis**: Detailed output and error messages with suggestions for fixing issues
+
+### Requirements
+
+- Docker must be installed and running on your system
+- No additional setup required - the agent will automatically use your local Docker installation
+
+### Usage
+
+1. Create a Code Runner agent in the Agent Configuration section
+2. Include the agent in a group chat
+3. Submit code to run by asking the agent to execute it
+4. Receive results, error messages, and suggestions

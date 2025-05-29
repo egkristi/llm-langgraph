@@ -10,26 +10,17 @@ CONVERSATIONS_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file_
 # Create the directory if it doesn't exist
 CONVERSATIONS_DIR.mkdir(exist_ok=True)
 
-def get_conversation_filename(group_chat_name: str, timestamp: Optional[str] = None) -> Path:
-    """
-    Generate a filename for a conversation based on the group chat name and timestamp.
+def get_conversation_filename(group_chat_name: str) -> str:
+    """Generate a unique filename for the conversation."""
+    # Create a timestamp
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
     
-    Args:
-        group_chat_name: Name of the group chat
-        timestamp: Optional timestamp string, will use current time if not provided
-        
-    Returns:
-        Path object for the conversation file
-    """
-    # Clean group chat name to make it suitable for a filename
-    safe_name = "".join(c if c.isalnum() or c in " -_" else "_" for c in group_chat_name)
-    safe_name = safe_name.replace(" ", "_")
+    # Sanitize the group chat name and ensure no spaces
+    safe_name = "".join(c if c.isalnum() or c in "_-" else "_" for c in group_chat_name)
+    safe_name = safe_name.replace(" ", "_").lower()
     
-    # Use provided timestamp or generate a new one
-    if not timestamp:
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
-        
-    return CONVERSATIONS_DIR / f"{safe_name}_{timestamp}.json"
+    # Generate the filename
+    return f"{safe_name}_{timestamp}.json"
 
 def save_conversation(group_chat_name: str, chat_history: List[Dict[str, Any]], metadata: Optional[Dict[str, Any]] = None) -> str:
     """
@@ -47,9 +38,9 @@ def save_conversation(group_chat_name: str, chat_history: List[Dict[str, Any]], 
     if not chat_history:
         return ""
         
-    # Generate a timestamp for the filename
-    timestamp = time.strftime("%Y%m%d_%H%M%S")
-    file_path = get_conversation_filename(group_chat_name, timestamp)
+    # Generate filename using the get_conversation_filename function
+    filename = get_conversation_filename(group_chat_name)
+    file_path = CONVERSATIONS_DIR / filename
     
     # Prepare the data to save
     conversation_data = {

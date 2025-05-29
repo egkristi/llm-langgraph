@@ -1,9 +1,14 @@
-from typing import Dict, Optional, Any
+from typing import Dict, List, Any, Optional
 import ollama
-from langchain_community.llms.ollama import Ollama
+import json
+from pathlib import Path
 from langchain_core.language_models import LLM
+from langchain_community.llms.ollama import Ollama
 
-# Cache for LLM instances to avoid recreating them
+# Path to models.json file
+MODELS_FILE = Path("models.json")
+
+# Cache for model instances
 _model_cache: Dict[str, LLM] = {}
 
 class ModelManager:
@@ -12,6 +17,7 @@ class ModelManager:
     def __init__(self, default_model: str = "llama3"):
         self.default_model = default_model
         self.ollama_host = "http://localhost:11434"
+        self.load_models_file()
         
     def set_default_model(self, model_name: str):
         """Set the default model to use."""
@@ -83,6 +89,59 @@ class ModelManager:
             print(f"Error listing models: {str(e)}")
             return []
     
+    def load_models_file(self) -> Dict:
+        """Load the models.json file."""
+        try:
+            if MODELS_FILE.exists():
+                with open(MODELS_FILE, 'r') as f:
+                    return json.load(f)
+            else:
+                # Create default models file if it doesn't exist
+                default_data = {
+                    "recommended_models": [],
+                    "installed_models": []
+                }
+                with open(MODELS_FILE, 'w') as f:
+                    json.dump(default_data, f, indent=2)
+                return default_data
+        except Exception as e:
+            print(f"Error loading models file: {str(e)}")
+            return {"recommended_models": [], "installed_models": []}
+    
+    def save_models_file(self, data: Dict) -> bool:
+        """Save data to the models.json file."""
+        try:
+            with open(MODELS_FILE, 'w') as f:
+                json.dump(data, f, indent=2)
+            return True
+        except Exception as e:
+            print(f"Error saving models file: {str(e)}")
+            return False
+    
+    def get_all_models(self) -> Dict[str, List]:
+        """Get all recommended and installed models."""
+        # Load models file
+        models_data = self.load_models_file()
+        
+        # Get currently available models from Ollama
+        available_models = self.list_available_models()
+        
+        # Update installed models
+        models_data["installed_models"] = available_models
+        
+        # Save updated data
+        self.save_models_file(models_data)
+        
+        return {
+            "recommended": models_data.get("recommended_models", []),
+            "installed": available_models
+        }
+    
+    def is_model_installed(self, model_name: str) -> bool:
+        """Check if a model is installed in Ollama."""
+        available_models = self.list_available_models()
+        return model_name in available_models
+    
     def pull_model(self, model_name: str) -> bool:
         """Pull a new model from Ollama."""
         try:
@@ -95,6 +154,13 @@ class ModelManager:
             
             # Restore original base URL
             ollama.BASE_URL = original_base_url
+            
+            # Update installed models list
+            models_data = self.load_models_file()
+            if model_name not in models_data["installed_models"]:
+                models_data["installed_models"].append(model_name)
+                self.save_models_file(models_data)
+            
             return True
         except Exception as e:
             print(f"Error pulling model {model_name}: {str(e)}")

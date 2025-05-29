@@ -4,6 +4,12 @@ from langchain_core.tools import BaseTool, tool
 # Import manager-specific tools
 from tools.manager_tools import analyze_question, validate_response, identify_gaps, summarize_responses
 
+# Import Docker code runner tools
+from tools.docker_code_runner import run_code, list_running_code, kill_running_code, docker_available
+
+# Import workspace tools
+from tools.workspace_tools import list_workspace_files, read_workspace_file, save_workspace_file, get_workspace_details
+
 # Dictionary to store registered tools
 _tools: Dict[str, List[BaseTool]] = {}
 
@@ -39,6 +45,10 @@ _tools["Coder"] = [search_tool, code_analyzer_tool, calculator_tool]
 _tools["Math Expert"] = [calculator_tool]
 _tools["Critic"] = [fact_checker_tool]
 _tools["Manager"] = [analyze_question, validate_response, identify_gaps, summarize_responses]
+
+# Create and register a new Code Runner agent type
+_tools["Code Runner"] = [run_code, list_running_code, kill_running_code, code_analyzer_tool, search_tool, 
+                       list_workspace_files, read_workspace_file, save_workspace_file, get_workspace_details]
 
 def register_tool(tool_obj: BaseTool, agent_types: List[str] = ["default"]):
     """
