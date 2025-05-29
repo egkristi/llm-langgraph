@@ -195,11 +195,38 @@ newgrp docker
 
 After installing all prerequisites, follow these steps to set up and run the application:
 
-### 1. Clone the Repository
+### 1. Get the Repository
+
+#### Option A: Clone the Repository (Read-only)
+
+If you just want to run the application without making contributions:
 
 ```bash
 git clone https://github.com/egkristi/llm-langgraph.git
 cd llm-langgraph
+```
+
+#### Option B: Fork and Clone (For Contributors)
+
+If you want to contribute to the project:
+
+1. Fork the repository on GitHub by visiting https://github.com/egkristi/llm-langgraph and clicking the 'Fork' button
+2. Clone your forked repository:
+
+```bash
+git clone https://github.com/YOUR-USERNAME/llm-langgraph.git
+cd llm-langgraph
+
+# Add the original repository as a remote to keep your fork updated
+git remote add upstream https://github.com/egkristi/llm-langgraph.git
+```
+
+To keep your fork updated with the main repository:
+
+```bash
+git fetch upstream
+git checkout main
+git merge upstream/main
 ```
 
 ### 2. Install Dependencies
