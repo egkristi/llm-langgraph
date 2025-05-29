@@ -1,0 +1,6 @@
+{
+  "default_model": "devstral",
+  "ollama_host": "http://localhost:11434",
+  "debug_mode": true,
+  "active_group_chat": "Default Group Chat"
+}

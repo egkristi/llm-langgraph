@@ -1,0 +1,68 @@
+{
+  "Manager": {
+    "name": "Manager",
+    "agent_type": "Manager",
+    "model": "llama3",
+    "custom_prompt": null
+  },
+  "William": {
+    "name": "William",
+    "agent_type": "Researcher",
+    "model": "mistral",
+    "custom_prompt": null
+  },
+  "Astrid": {
+    "name": "Astrid",
+    "agent_type": "Math Expert",
+    "model": "llama3",
+    "custom_prompt": null
+  },
+  "Vilde": {
+    "name": "Vilde",
+    "agent_type": "Critic",
+    "model": "llama3",
+    "custom_prompt": null
+  },
+  "assistent": {
+    "name": "assistent",
+    "agent_type": "Assistant",
+    "model": "devstral",
+    "custom_prompt": null
+  },
+  "forsker": {
+    "name": "forsker",
+    "agent_type": "Assistant",
+    "model": "devstral",
+    "custom_prompt": null
+  },
+  "koder1": {
+    "name": "koder1",
+    "agent_type": "Assistant",
+    "model": "devstral",
+    "custom_prompt": null
+  },
+  "koder2": {
+    "name": "koder2",
+    "agent_type": "Assistant",
+    "model": "devstral",
+    "custom_prompt": null
+  },
+  "matematiker": {
+    "name": "matematiker",
+    "agent_type": "Assistant",
+    "model": "devstral",
+    "custom_prompt": null
+  },
+  "kritiker": {
+    "name": "kritiker",
+    "agent_type": "Assistant",
+    "model": "devstral",
+    "custom_prompt": null
+  },
+  "kreativ": {
+    "name": "kreativ",
+    "agent_type": "Assistant",
+    "model": "devstral",
+    "custom_prompt": null
+  }
+}
