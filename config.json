@@ -1,6 +1,6 @@
 {
   "default_model": "gemma3",
   "ollama_host": "http://localhost:11434",
-  "debug_mode": true,
+  "debug_mode": false,
   "active_group_chat": "Coding Group Chat"
 }

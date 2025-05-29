@@ -537,6 +537,22 @@ with st.sidebar:
                     st.exception(e)
                     st.write("Try running 'ollama serve' in a terminal to start Ollama")
 
+    # Debug mode toggle
+    st.subheader("Advanced Settings")
+    debug_mode = st.checkbox("Enable Debug Mode", value=st.session_state.debug_mode, 
+                           help="Display verbose debugging information in the UI")
+    
+    # Update session state when checkbox changes
+    if debug_mode != st.session_state.debug_mode:
+        st.session_state.debug_mode = debug_mode
+        # Save the debug mode setting to config
+        config = st.session_state.config
+        config["debug_mode"] = debug_mode
+        save_config(config)
+        st.toast(f"Debug mode {'enabled' if debug_mode else 'disabled'}")
+        # Force a rerun to update the UI
+        st.rerun()
+
     # Workspace file browser (collapsed by default)
     with st.expander("Workspace Files", expanded=False):
         # Get current group chat name
@@ -1149,17 +1165,52 @@ with tab4:
 
 # Chat Interface section follows the Group Chat Management section
 
-# Show currently active group chat
-if st.session_state.group_chat is not None and st.session_state.active_group_chat:
+# Main chat interface (only shown if group chat is active)
+if st.session_state.group_chat and st.session_state.active_group_chat:
     chat_name = st.session_state.active_group_chat
-    if chat_name in st.session_state.saved_group_chats:
-        chat_config = st.session_state.saved_group_chats[chat_name]
-        agent_list = chat_config["agent_names"]
-        
-        # Show concise version with max 3 agents and elipsis if more
-        agent_display = ", ".join(agent_list[:3])
-        if len(agent_list) > 3:
-            agent_display += ", ..."
+    chat_config = st.session_state.saved_group_chats[chat_name]
+    agent_list = chat_config["agent_names"]
+    
+    st.title(f"Group Chat: {chat_name}")
+    
+    # Debug information display (only shown in debug mode)
+    if st.session_state.debug_mode:
+        with st.expander("Debug Information", expanded=True):
+            # Group chat configuration
+            st.subheader("Group Chat Configuration")
+            st.json(chat_config)
+            
+            # Agent information
+            st.subheader("Participating Agents")
+            for agent_name in agent_list:
+                if agent_name in st.session_state.agents:
+                    agent = st.session_state.agents[agent_name]
+                    st.markdown(f"**{agent_name}**")
+                    st.write(f"Type: {agent.agent_type}, Model: {agent.model}")
+                    
+                    # Show tools for each agent
+                    if hasattr(agent, 'tools') and agent.tools:
+                        st.markdown("**Available Tools:**")
+                        for tool in agent.tools:
+                            st.markdown(f"- {tool.name}: {tool.description}")
+            
+            # Workspace information
+            st.subheader("Workspace Information")
+            workspace_info = get_workspace_info(chat_name)
+            st.write(f"Workspace Path: {workspace_info['path']}")
+            st.write(f"Code Files: {len(workspace_info['code_files'])}")
+            st.write(f"Data Files: {len(workspace_info['data_files'])}")
+            st.write(f"Output Files: {len(workspace_info['output_files'])}")
+            
+            # Docker status
+            st.subheader("Docker Status")
+            docker_status = docker_available()
+            st.write(f"Docker Available: {docker_status}")
+    
+    # Show concise version with max 3 agents and ellipsis if more
+    agent_display = ", ".join(agent_list[:3])
+    if len(agent_list) > 3:
+        agent_display += ", ..."
             
         # Use a clean success message with icon
         st.success(f"🔄 **Active Chat:** {chat_name} with {agent_display}")

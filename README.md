@@ -52,6 +52,7 @@ graph TD
 - Ollama installed and running
 - Python >= 3.13
 - uv >= 0.5.0
+- docker >= 25.0.2
 
 ## Setup
 

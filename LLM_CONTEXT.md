@@ -31,6 +31,7 @@ uv add streamlit langchain ollama
 - Model Caching: Reuses LLM instances for efficiency
 - Flexible Configuration: Easy to extend with new agent types
 - Proper ReAct Format: Follows the Thought/Action/Observation pattern
+- The session with a client should be persistent, even if connection is lost for a while.
 
 ### Additional Features:
 

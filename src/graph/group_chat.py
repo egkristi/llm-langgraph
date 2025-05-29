@@ -28,6 +28,9 @@ class GroupChat:
         self.max_rounds = max_rounds
         self.group_chat_name = group_chat_name
         
+        # Initialize persistent conversation history across user interactions
+        self.chat_history = []
+        
         # Designate one agent as the chat manager if available, otherwise create one
         if "Manager" in self.agents:
             self.manager_agent = self.agents["Manager"]
@@ -49,8 +52,11 @@ class GroupChat:
         Returns:
             Dictionary mapping agent names to their responses
         """
-        # Initialize conversation history and responses
-        conversation = [{"role": "user", "content": user_input}]
+        # Add the new user input to the persistent conversation history
+        self.chat_history.append({"role": "user", "content": user_input})
+        
+        # Initialize conversation for this run (using persistent history)
+        conversation = self.chat_history.copy()
         final_responses = {}
         current_round = 0
         consensus_reached = False
@@ -310,8 +316,9 @@ class GroupChat:
                                     "round": current_round
                                 }
                                 
-                                # Add the execution result to the conversation
+                                # Add the execution result to both the current conversation and persistent history
                                 conversation.append(execution_message)
+                                self.chat_history.append(execution_message)
                                 round_responses["codeExecutor"] = execution_message["content"]
                                 
                                 # Notify callback of execution result
@@ -331,7 +338,9 @@ class GroupChat:
                     "code_blocks": processed_message["code_blocks"],
                     "saved_files": processed_message["saved_files"]
                 }
+                # Add to both the current conversation and persistent history
                 conversation.append(new_message)
+                self.chat_history.append(new_message)
                 
                 # If a callback is provided, send the update as it happens
                 if callback:
@@ -345,9 +354,10 @@ class GroupChat:
                 consensus_reached, manager_response = self._evaluate_consensus(conversation, user_input)
                 
                 if manager_response:
-                    # Add manager response to conversation
+                    # Add manager response to both conversation and persistent history
                     manager_message = {"role": "Manager", "content": manager_response, "round": current_round}
                     conversation.append(manager_message)
+                    self.chat_history.append(manager_message)
                     final_responses["Manager"] = manager_response
                     
                     # Notify callback of manager's response
@@ -355,10 +365,11 @@ class GroupChat:
                         callback("Manager", manager_response, current_round, is_evaluation=True)
                     
                 if consensus_reached:
-                    # Add final consensus note
+                    # Add final consensus note to both conversation and persistent history
                     consensus_msg = "[Consensus reached] The agents have reached a satisfactory conclusion."
                     system_message = {"role": "System", "content": consensus_msg, "round": current_round}
                     conversation.append(system_message)
+                    self.chat_history.append(system_message)
                     
                     # Notify callback of system message
                     if callback:
@@ -367,11 +378,12 @@ class GroupChat:
                 # If not requiring consensus, just do one round
                 consensus_reached = True
         
-        # If max rounds reached without consensus, add a note
+        # If max rounds reached without consensus, add a note to both conversation and persistent history
         if self.require_consensus and not consensus_reached and current_round >= self.max_rounds:
             max_rounds_msg = f"[Discussion ended] Maximum of {self.max_rounds} rounds reached without full consensus."
             system_message = {"role": "System", "content": max_rounds_msg, "round": current_round}
             conversation.append(system_message)
+            self.chat_history.append(system_message)
             final_responses["System"] = max_rounds_msg
             
             # Notify callback of system message
