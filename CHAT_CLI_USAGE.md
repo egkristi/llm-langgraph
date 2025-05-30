@@ -44,7 +44,7 @@ graph TD
         BestResponse --> Final
     end
     
-    GroupChat -->|"Manage"| Discussion Process
+    GroupChat -->|"Manage"| Input
     Final -->|"Return to"| User
 ```
 
@@ -228,7 +228,7 @@ All files are stored in the `/Users/erling/code/llm-langgraph/workspaces` direct
 graph TD
     CLI[CLI Tool] -->|"Creates"| Workspace[Workspace Manager]
     
-    Workspace -->|"Creates"| WorkspacePath[/Users/erling/code/llm-langgraph/workspaces]
+    Workspace -->|"Creates"| WorkspacePath["Workspaces Directory"]
     WorkspacePath -->|"Contains"| ChatDir[Chat-Specific Directory]
     
     ChatDir -->|"Contains"| CodeDir[code/ Directory]
