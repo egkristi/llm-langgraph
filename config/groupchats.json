@@ -36,7 +36,7 @@
     "require_consensus": true,
     "max_rounds": 15,
     "created_at": "2025-05-29 13:37:34",
-    "active": false
+    "active": true
   },
   "Coding Group Chat 2": {
     "agent_names": [
@@ -75,6 +75,6 @@
     "require_consensus": true,
     "max_rounds": 99,
     "created_at": "2025-05-29 17:16:45",
-    "active": true
+    "active": false
   }
 }

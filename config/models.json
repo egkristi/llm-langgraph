@@ -112,9 +112,18 @@
       "tags": [
         "custom"
       ]
+    },
+    {
+      "name": "wizard-vicuna-uncensored",
+      "display_name": "wizard-vicuna-uncensored",
+      "description": "Wizard Vicuna Uncensored is a 7B, 13B, and 30B parameter model based on Llama 2 uncensored by Eric Hartford.",
+      "tags": [
+        "custom"
+      ]
     }
   ],
   "installed_models": [
+    "wizard-vicuna-uncensored",
     "phi4",
     "qwen3",
     "gemma3",
