@@ -8,13 +8,14 @@ A Streamlit application that leverages LangGraph to create multi-agent conversat
 ## Features
 
 - **Multiple Agent Types**: Create specialized agents (Assistant, Researcher, Coder, Math Expert, Critic, or Custom)
+- **Custom Agent Type Management**: Add, edit, and delete agent types with custom system prompts
 - **Custom Model Integration**: Pull and configure custom Ollama models directly from the UI
 - **Consensus-Based Discussion**: Agents can engage in multi-round discussions until reaching consensus
 - **Group Chat Manager**: A designated agent evaluates when consensus has been reached
 - **Local LLM Integration**: Uses Ollama to run models completely locally
 - **Agent Memory**: Conversation history for contextual responses
 - **Persistent Agents & Group Chats**: Agents and group chat configurations are automatically saved and can be reused across sessions
-- **Configuration Management**: Save and load agent configurations
+- **Configuration Management**: Save and load agent and agent type configurations
 - **Conversation History**: All conversations are automatically saved to the 'conversations' folder and can be reloaded later
 - **Dynamic Tools**: Different tools assigned based on agent type
 - **Debug Mode**: Enable detailed logging and performance metrics
