@@ -1,4 +1,3 @@
-from typing import Optional, Dict, List, Any
 import os
 import uuid
 import tempfile
@@ -7,6 +6,7 @@ import json
 import time
 import logging
 from pathlib import Path
+from typing import Dict, List, Any, Optional
 from langchain_core.tools import BaseTool, tool
 from utils.workspace_manager import save_file, get_workspace_path, list_files
 
@@ -18,6 +18,54 @@ logging.basicConfig(level=logging.INFO,
 
 # Dictionary to store information about running containers
 _running_containers: Dict[str, Dict[str, Any]] = {}
+
+# Path to Docker languages configuration file
+DOCKER_CONFIG_PATH = Path("config/docker_languages.json")
+
+# Load Docker languages configuration
+def load_docker_config() -> Dict[str, Any]:
+    """Load Docker languages configuration from JSON file."""
+    try:
+        if not DOCKER_CONFIG_PATH.exists():
+            logging.warning(f"Docker config file not found at {DOCKER_CONFIG_PATH}. Using defaults.")
+            return {
+                "supported_languages": {
+                    "python": {
+                        "image": "python:3.11-slim",
+                        "file_ext": "py",
+                        "cmd": "python",
+                        "install_cmd": "pip install",
+                        "packages": []
+                    }
+                },
+                "default_timeout": 10,
+                "memory_limit": "256m",
+                "cpu_limit": "0.5"
+            }
+        
+        with open(DOCKER_CONFIG_PATH, 'r') as f:
+            config = json.load(f)
+            logging.info(f"Loaded Docker configuration with {len(config.get('supported_languages', {}))} languages")
+            return config
+    except Exception as e:
+        logging.error(f"Error loading Docker config: {str(e)}")
+        return {
+            "supported_languages": {
+                "python": {
+                    "image": "python:3.11-slim",
+                    "file_ext": "py",
+                    "cmd": "python",
+                    "install_cmd": "pip install",
+                    "packages": []
+                }
+            },
+            "default_timeout": 10,
+            "memory_limit": "256m",
+            "cpu_limit": "0.5"
+        }
+
+# Global docker configuration
+DOCKER_CONFIG = load_docker_config()
 
 @tool
 def run_code(code: str, language: str, file_name: str = "", group_chat_name: str = "Default Group Chat", timeout: int = 10) -> str:
@@ -37,36 +85,26 @@ def run_code(code: str, language: str, file_name: str = "", group_chat_name: str
     logging.info(f"run_code called with language={language}, file_name={file_name}, group_chat={group_chat_name}")
     logging.info(f"Code snippet: {code[:100]}...")
     print(f"CODE RUNNER: Executing {language} code for {group_chat_name}")
-    # Only support certain languages for security
-    supported_languages = {
-        "python": {
-            "image": "python:3.11-slim",
-            "file_ext": "py",
-            "cmd": "python",
-            "install_cmd": "pip install",
-            "packages": []
-        },
-        "javascript": {
-            "image": "node:18-slim",
-            "file_ext": "js",
-            "cmd": "node",
-            "install_cmd": "npm install",
-            "packages": []
-        },
-        "go": {
-            "image": "golang:1.20-alpine",
-            "file_ext": "go",
-            "cmd": "go run",
-            "install_cmd": "go get",
-            "packages": []
-        }
-    }
     
+    # Get supported languages from configuration
+    supported_languages = DOCKER_CONFIG.get("supported_languages", {})
+    available_languages = list(supported_languages.keys())
+    
+    # Check if language is supported
     if language.lower() not in supported_languages:
-        return f"Error: Unsupported language '{language}'. Supported languages: {', '.join(supported_languages.keys())}"
+        return f"Error: Unsupported language '{language}'. Supported languages: {', '.join(available_languages)}"
     
     # Get language configuration
     lang_config = supported_languages[language.lower()]
+    
+    # Get execution parameters from configuration
+    config_timeout = DOCKER_CONFIG.get("default_timeout", 10)
+    memory_limit = DOCKER_CONFIG.get("memory_limit", "256m")
+    cpu_limit = DOCKER_CONFIG.get("cpu_limit", "0.5")
+    
+    # Use provided timeout if specified, otherwise use default from config
+    if timeout <= 0:
+        timeout = config_timeout
     
     # Create a unique ID for this execution
     execution_id = str(uuid.uuid4())[:8]
@@ -159,23 +197,75 @@ def run_code(code: str, language: str, file_name: str = "", group_chat_name: str
         print(f"CODE RUNNER: Mounting output directory: {abs_output_dir}")
         print(f"CODE RUNNER: Will execute: {lang_config['cmd']} {file_name}")
         
-        # Set up Docker run command with proper security constraints
+        # Get container security settings from configuration
+        container_security = DOCKER_CONFIG.get("container_security", {
+            "drop_capabilities": ["ALL"],
+            "read_only": True,
+            "no_network": True,
+            "security_opt": ["no-new-privileges"]
+        })
+        
+        # Get mount options from configuration
+        mount_options = DOCKER_CONFIG.get("mount_options", {
+            "code_dir": {"read_only": True},
+            "data_dir": {"read_only": True},
+            "output_dir": {"read_only": False}
+        })
+        
+        # Set up Docker run command with security constraints from config
         cmd = [
             "docker", "run",
             "--name", container_name,
-            "--rm",  # Remove container after execution
-            "--network=none",  # No network access
-            "--memory=256m",  # Memory limit
-            "--cpus=0.5",  # CPU limit
-            "--pids-limit=50",  # Process limit
-            "--read-only",  # Read-only filesystem except for specific mounts
-            "-v", f"{abs_code_dir}:/code:ro",  # Mount code as read-only
-            "-v", f"{abs_output_dir}:/output:rw",  # Mount output with write permissions
-            "-w", "/code",  # Set working directory
-            "--security-opt=no-new-privileges",  # No privilege escalation
-            lang_config["image"],
-            "sh", "-c", f"ls -la /code && {lang_config['cmd']} {file_name} | tee /output/{output_file}"
+            "--rm"  # Remove container after execution
         ]
+        
+        # Add resource limits from configuration
+        cmd.extend([
+            f"--memory={memory_limit}",  # Memory limit from config
+            f"--cpus={cpu_limit}",      # CPU limit from config
+            "--pids-limit=50"           # Process limit
+        ])
+        
+        # Add network constraints
+        if container_security.get("no_network", True):
+            cmd.append("--network=none")
+        
+        # Add read-only filesystem if configured
+        if container_security.get("read_only", True):
+            cmd.append("--read-only")
+        
+        # Add security options
+        for opt in container_security.get("security_opt", ["no-new-privileges"]):
+            cmd.extend(["--security-opt", opt])
+        
+        # Add capability drops
+        for cap in container_security.get("drop_capabilities", ["ALL"]):
+            cmd.extend(["--cap-drop", cap])
+        
+        # Set up workspace mounts based on configuration
+        # Get data directory path
+        abs_data_dir = os.path.abspath(get_workspace_path(group_chat_name, "data"))
+        
+        # Mount code directory
+        code_mount_mode = "ro" if mount_options.get("code_dir", {}).get("read_only", True) else "rw"
+        cmd.extend(["-v", f"{abs_code_dir}:/code:{code_mount_mode}"])
+        
+        # Mount data directory
+        data_mount_mode = "ro" if mount_options.get("data_dir", {}).get("read_only", True) else "rw"
+        cmd.extend(["-v", f"{abs_data_dir}:/data:{data_mount_mode}"])
+        
+        # Mount output directory
+        output_mount_mode = "rw" if not mount_options.get("output_dir", {}).get("read_only", False) else "ro"
+        cmd.extend(["-v", f"{abs_output_dir}:/output:{output_mount_mode}"])
+        
+        # Set working directory
+        cmd.extend(["-w", "/code"])
+        
+        # Add image and command
+        cmd.extend([
+            lang_config["image"],
+            "sh", "-c", f"ls -la /code && echo 'Data files:' && ls -la /data 2>/dev/null || echo 'No data files found' && {lang_config['cmd']} {file_name} | tee /output/{output_file}"
+        ])
         
         # Log the command
         docker_cmd_str = " ".join(cmd)

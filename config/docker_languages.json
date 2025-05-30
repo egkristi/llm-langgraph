@@ -1,0 +1,128 @@
+{
+    "supported_languages": {
+        "python": {
+            "image": "python:3.11-slim",
+            "file_ext": "py",
+            "cmd": "python",
+            "install_cmd": "pip install",
+            "packages": [],
+            "description": "Python 3.11 with a minimal image for fast startup"
+        },
+        "javascript": {
+            "image": "node:18-slim",
+            "file_ext": "js",
+            "cmd": "node",
+            "install_cmd": "npm install",
+            "packages": [],
+            "description": "Node.js 18 for JavaScript execution"
+        },
+        "go": {
+            "image": "golang:1.20-alpine",
+            "file_ext": "go",
+            "cmd": "go run",
+            "install_cmd": "go get",
+            "packages": [],
+            "description": "Go 1.20 with Alpine Linux for efficient Go execution"
+        },
+        "typescript": {
+            "image": "node:18-slim",
+            "file_ext": "ts",
+            "cmd": "npx ts-node",
+            "install_cmd": "npm install",
+            "packages": ["typescript", "ts-node"],
+            "description": "TypeScript support using Node.js 18 with ts-node"
+        },
+        "rust": {
+            "image": "rust:slim",
+            "file_ext": "rs",
+            "cmd": "rustc -o /tmp/output && /tmp/output",
+            "install_cmd": "cargo add",
+            "packages": [],
+            "description": "Rust compiler with slim image for systems programming"
+        },
+        "java": {
+            "image": "openjdk:17-slim",
+            "file_ext": "java",
+            "cmd": "javac && java Main",
+            "install_cmd": "mvn install",
+            "packages": [],
+            "description": "OpenJDK 17 for Java development"
+        },
+        "ruby": {
+            "image": "ruby:3.1-slim",
+            "file_ext": "rb",
+            "cmd": "ruby",
+            "install_cmd": "gem install",
+            "packages": [],
+            "description": "Ruby 3.1 for Ruby script execution"
+        },
+        "c": {
+            "image": "gcc:11.2.0",
+            "file_ext": "c",
+            "cmd": "gcc -o /tmp/output && /tmp/output",
+            "install_cmd": "apt-get install -y",
+            "packages": [],
+            "description": "GCC 11.2.0 for C language compilation and execution"
+        },
+        "cpp": {
+            "image": "gcc:11.2.0",
+            "file_ext": "cpp",
+            "cmd": "g++ -o /tmp/output && /tmp/output",
+            "install_cmd": "apt-get install -y",
+            "packages": [],
+            "description": "GCC 11.2.0 for C++ language compilation and execution" 
+        },
+        "csharp": {
+            "image": "mcr.microsoft.com/dotnet/sdk:6.0",
+            "file_ext": "cs",
+            "cmd": "dotnet run",
+            "install_cmd": "dotnet add package",
+            "packages": [],
+            "description": ".NET 6.0 SDK for C# development"
+        },
+        "php": {
+            "image": "php:8.1-cli",
+            "file_ext": "php",
+            "cmd": "php",
+            "install_cmd": "composer require",
+            "packages": [],
+            "description": "PHP 8.1 CLI for PHP script execution"
+        },
+        "r": {
+            "image": "r-base:4.2.0",
+            "file_ext": "r",
+            "cmd": "Rscript",
+            "install_cmd": "R -e \"install.packages('$PACKAGE')\"",
+            "packages": [],
+            "description": "R 4.2.0 for statistical computing and data analysis"
+        },
+        "shell": {
+            "image": "alpine:3.16",
+            "file_ext": "sh",
+            "cmd": "sh",
+            "install_cmd": "apk add",
+            "packages": [],
+            "description": "Alpine Linux 3.16 for shell script execution"
+        }
+    },
+    "default_timeout": 10,
+    "memory_limit": "256m",
+    "cpu_limit": "0.5",
+    "container_security": {
+        "drop_capabilities": ["ALL"],
+        "read_only": true,
+        "no_network": true,
+        "security_opt": ["no-new-privileges"]
+    },
+    "mount_options": {
+        "code_dir": {
+            "read_only": true
+        },
+        "data_dir": {
+            "read_only": true
+        },
+        "output_dir": {
+            "read_only": false
+        }
+    }
+}
