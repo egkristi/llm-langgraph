@@ -5,8 +5,12 @@ from pathlib import Path
 from langchain_core.language_models import LLM
 from langchain_community.llms.ollama import Ollama
 
-# Path to models.json file
-MODELS_FILE = Path("models.json")
+# Path to models.json file in the config directory
+CONFIG_DIR = Path("config")
+MODELS_FILE = CONFIG_DIR / "models.json"
+
+# Create config directory if it doesn't exist
+CONFIG_DIR.mkdir(exist_ok=True)
 
 # Cache for model instances
 _model_cache: Dict[str, LLM] = {}

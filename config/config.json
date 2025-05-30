@@ -1,0 +1,6 @@
+{
+  "default_model": "gemma3",
+  "ollama_host": "http://localhost:11434",
+  "debug_mode": false,
+  "active_group_chat": "Stor Gruppe 99 runder consensus"
+}

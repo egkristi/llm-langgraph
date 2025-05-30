@@ -4,9 +4,13 @@ from typing import Dict, List, Any, Optional
 import time
 
 # Default config files location
-CONFIG_FILE = Path("config.json")
-AGENTS_FILE = Path("agents.json")
-GROUPCHATS_FILE = Path("groupchats.json")
+CONFIG_DIR = Path("config")
+CONFIG_FILE = CONFIG_DIR / "config.json"
+AGENTS_FILE = CONFIG_DIR / "agents.json"
+GROUPCHATS_FILE = CONFIG_DIR / "groupchats.json"
+
+# Create config directory if it doesn't exist
+CONFIG_DIR.mkdir(exist_ok=True)
 
 def load_config(config_path: Optional[Path] = None) -> Dict[str, Any]:
     """
