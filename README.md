@@ -76,6 +76,17 @@ graph TD
 
 For detailed installation instructions for all prerequisites on macOS, Linux, and Windows, please refer to the [INSTALL.md](INSTALL.md) guide.
 
+## Configuration Files
+
+The application uses several JSON configuration files stored in the `config/` directory:
+
+- **config.json**: Main application configuration including default model and Ollama host settings
+- **agents.json**: Persistent storage of created agents and their configurations
+- **groupchats.json**: Saved group chat configurations 
+- **agent_types.json**: Definitions of agent types including their system prompts
+
+These files are automatically created and updated as you use the application. You can manually edit them if needed, but it's recommended to use the application's UI for most changes.
+
 ## Setup
 
 ### 1. Ensure Ollama is running
@@ -124,18 +135,24 @@ For easier startup and shutdown, you can use the provided scripts:
 ## Using the Application
 
 1. **Connect to Ollama**: First, ensure Ollama is running and click "Connect to Ollama" in the sidebar
-2. **Pull Custom Models** (Optional): Use the "Pull Custom Models" section in the sidebar to add new Ollama models
+2. **Pull Custom Models** (Optional): Use the "Model Management" section in the sidebar to add new Ollama models
    - Enter the model name as it appears in Ollama (e.g., `llama3:latest`, `wizardcoder:python`)
    - Add optional display name, description, and tags for better organization
    - The model will be pulled from Ollama and added to models.json for future use
-3. **Create Agents**: Configure and create agents with different specialties
-4. **Setup Group Chat**: Select multiple agents to participate in a group chat
+3. **Manage Agent Types** (Optional): Use the "Agent Types Management" section in the sidebar to customize agent types
+   - **View/Edit Agent Types**: Select an existing agent type to modify its display name, description, and system prompt
+   - **Add New Agent Type**: Create a new agent type with a custom system prompt
+   - **Delete Agent Type**: Remove agent types that are no longer needed
+   - All changes are automatically saved to the `config/agent_types.json` file
+4. **Create Agents**: Configure and create agents with different specialties
+   - Select from the standard agent types or any custom types you've created
+5. **Setup Group Chat**: Select multiple agents to participate in a group chat
    - **Enable Consensus Mode**: Check "Require Consensus" to have agents discuss until agreement
    - **Set Discussion Rounds**: Choose how many rounds of discussion to allow (1-99)
    - **Add a Critic or Manager**: For best results in consensus mode, include a Critic or create a Manager agent
-5. **Chat Interface**: Interact with your agents through the main chat interface
-6. **Access Saved Conversations**: Open the Group Chat Management section and go to the Conversations tab to browse, filter, and reload past conversations
-7. **Save Configuration**: Save your agent configurations for future use
+6. **Chat Interface**: Interact with your agents through the main chat interface
+7. **Access Saved Conversations**: Open the Group Chat Management section and go to the Conversations tab to browse, filter, and reload past conversations
+8. **Save Configuration**: Save your agent configurations for future use
 
 ## Agent Types
 
@@ -146,6 +163,18 @@ For easier startup and shutdown, you can use the provided scripts:
 - **Critic**: Provides critical analysis and feedback
 - **Code Runner**: Executes and tests code securely in Docker containers
 - **Custom**: Create your own agent with a custom prompt
+- **Any custom types**: Create additional agent types through the Agent Types Management interface
+
+### Managing Agent Types
+
+The application provides a dedicated interface for managing agent types:
+
+1. **View Existing Agent Types**: See all available agent types and their system prompts
+2. **Edit Agent Types**: Modify the display name, description, and system prompt of any agent type
+3. **Add New Agent Types**: Create new specialized agent types with custom system prompts
+4. **Delete Agent Types**: Remove agent types that are no longer needed
+
+All agent types are stored in the `config/agent_types.json` file and are automatically available when creating or editing agents.
 
 ## Consensus-Based Discussions
 
