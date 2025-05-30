@@ -224,7 +224,7 @@ class GroupChat:
                             print(f"Executing code file: {code_path} (exists: {code_path.exists()})")
                             
                             # Use direct_docker_run.py script which is more reliable
-                            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../direct_docker_run.py"))
+                            script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../src/tools/docker/direct_docker_run.py"))
                             
                             # Build the command to execute
                             cmd = [
