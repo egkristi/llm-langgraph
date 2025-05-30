@@ -131,6 +131,10 @@ def main():
                       help="Maximum number of discussion rounds before concluding (default: 3)")
     parser.add_argument("--consensus", action="store_true",
                       help="Require agents to reach consensus before concluding")
+    parser.add_argument("--list-models", action="store_true",
+                      help="List all available models from Ollama and exit")
+    parser.add_argument("--pull-model", type=str,
+                      help="Pull a model from Ollama and exit (e.g., --pull-model llama3)")
     # Add positional argument for the question as an alternative to --question
     parser.add_argument("question_pos", nargs="?", type=str,
                       help="Question to ask (can be provided directly without --question)")
@@ -150,6 +154,54 @@ def main():
     except Exception as e:
         print(f"Error connecting to Ollama: {str(e)}")
         print("Please make sure Ollama is running with 'ollama serve'")
+        return
+    
+    # Handle model listing command
+    if args.list_models:
+        print("\nAvailable Models in Ollama:")
+        print("===========================")
+        all_models = model_manager.get_all_models()
+        
+        # Display installed models
+        if all_models['installed']:
+            print("\nInstalled Models:")
+            for model in all_models['installed']:
+                print(f"  - {model}")
+        else:
+            print("\nNo models currently installed in Ollama.")
+            
+        # Display recommended models if any
+        if all_models['recommended']:
+            print("\nRecommended Models:")
+            for model in all_models['recommended']:
+                if isinstance(model, dict):
+                    name = model.get('name', 'Unknown')
+                    display = model.get('display_name', name)
+                    desc = model.get('description', 'No description available')
+                    print(f"  - {display} ({name}): {desc}")
+                else:
+                    print(f"  - {model}")
+        
+        print("\nTo pull a model: python src/chat_cli.py --pull-model <model_name>")
+        return
+    
+    # Handle model pull command
+    if args.pull_model:
+        model_name = args.pull_model
+        print(f"\nPulling model '{model_name}' from Ollama...")
+        print("This may take a while depending on the model size.")
+        
+        if model_manager.is_model_installed(model_name):
+            print(f"Model '{model_name}' is already installed.")
+            return
+            
+        success = model_manager.pull_model(model_name)
+        if success:
+            print(f"\n✓ Successfully pulled model '{model_name}'")
+            print(f"You can now use it with: python src/chat_cli.py --model {model_name} <question>")
+        else:
+            print(f"\n✗ Failed to pull model '{model_name}'")
+            print("Please check that the model name is correct and Ollama is running.")
         return
     
     # Load agent types from configuration

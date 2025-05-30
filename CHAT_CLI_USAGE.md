@@ -94,6 +94,8 @@ The CLI supports the following parameters:
 | `--list-agent-types` | Flag | List all available agent types and exit |
 | `--max-rounds MAX_ROUNDS` | Integer | Maximum number of discussion rounds before concluding (default: 3) |
 | `--consensus` | Flag | Require agents to reach consensus before concluding |
+| `--list-models` | Flag | List all available models from Ollama and exit |
+| `--pull-model MODEL` | String | Pull a model from Ollama and exit (e.g., --pull-model llama3) |
 | `question_pos` | Positional | Question to ask (can be provided directly without --question) |
 
 ## Usage Scenarios
@@ -329,6 +331,16 @@ For brevity, only the Python version is shown in the examples below, but you can
 9. **Combine code generation and execution:**
    ```bash
    python src/chat_cli.py --agents "Coder,Code Runner" "Write a simple Python program to calculate the Fibonacci sequence up to 20"
+   ```
+
+10. **List available models:**
+   ```bash
+   python src/chat_cli.py --list-models
+   ```
+
+11. **Pull a new model from Ollama:**
+   ```bash
+   python src/chat_cli.py --pull-model llama3:7b
    ```
 
 ## Troubleshooting
