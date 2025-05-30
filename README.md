@@ -69,7 +69,8 @@ graph TD
 - Ollama installed and running
 - Python >= 3.13
 - uv >= 0.5.0
-- Docker >= 25.0.2
+- Docker >= 25.0.2 (Colima recommended for macOS users)
+- VS Code or another Python IDE (recommended)
 
 For detailed installation instructions for all prerequisites on macOS, Linux, and Windows, please refer to the [INSTALL.md](INSTALL.md) guide.
 
@@ -85,21 +86,17 @@ ollama serve
 
 ```bash
 ollama pull llama3
-ollama pull devstral
 ollama pull mistral
 ollama pull codellama
 ```
 
 ### 3. Install dependencies
 
-```bash
-uv init llm-langgraph2 && cd llm-langgraph2
-uv add streamlit langchain-core langchain-community langgraph ollama
-```
+Please refer to the [INSTALL.md](INSTALL.md) guide for detailed installation instructions, including setting up virtual environments and installing dependencies.
 
 ## Running the Application
 
-Always use the following command to run the application with UV for proper dependency management:
+Use the following command to run the application. This will automatically set up a virtual environment and install all required packages before running:
 
 ```bash
 uv run streamlit run src/app.py
@@ -321,6 +318,7 @@ flowchart TD
         RO[Read-Only Filesystem]
         TO[Timeout: 10 seconds]
         CAP[Dropped Capabilities]
+        SEC[Secure Execution Environment]
     end
     
     Security -->|"Enforce"| Docker
@@ -365,8 +363,15 @@ The workspace system ensures that files persist between conversations, allowing 
 
 ### Requirements
 
-- Docker must be installed and running on your system
-- No additional setup required - the agent will automatically use your local Docker installation
+- Docker must be installed and running on your system (Colima recommended for macOS users)
+- For macOS users, Colima provides better performance and no licensing restrictions:
+  ```bash
+  # Install and configure Colima with appropriate resources
+  brew install colima docker docker-compose
+  colima start --cpu 4 --memory 8 --disk 20
+  ```
+- The application automatically detects and uses your Docker installation
+- All paths are dynamically managed by the workspace system for maximum portability
 
 ### Usage
 
