@@ -109,7 +109,9 @@ Please refer to the [INSTALL.md](INSTALL.md) guide for detailed installation ins
 
 ## Running the Application
 
-Use the following command to run the application. This will automatically set up a virtual environment and install all required packages before running:
+### Web UI
+
+Use the following command to run the Streamlit web application. This will automatically set up a virtual environment and install all required packages before running:
 
 ```bash
 uv run streamlit run src/app.py
@@ -120,9 +122,44 @@ To stop the application:
 pkill -f "streamlit run" || echo "No running Streamlit processes found"
 ```
 
+### Command Line Interface
+
+The application also provides a command-line interface for interacting with the multi-agent system without starting the web UI:
+
+```bash
+python src/chat_cli.py [options] [QUESTION]
+```
+
+Available options:
+
+* `--model MODEL` - Select which model to use for agents (default: llama3)
+* `--question QUESTION` - Ask a specific question and exit (alternatively, provide it as the last argument)
+* `--interactive` - Run in interactive mode for continuous conversation
+* `--agents AGENTS` - Comma-separated list of agent types to use (e.g. "Assistant,Manager,Coder")
+* `--list-agent-types` - List all available agent types and exit
+
+Examples:
+
+```bash
+# List all available agent types
+python src/chat_cli.py --list-agent-types
+
+# Interactive chat with specific agents and model
+python src/chat_cli.py --interactive --model gemma3 --agents "Coder,Math Expert,Manager"
+
+# Ask a single question (using --question flag)
+python src/chat_cli.py --question "How do transformer models work?"
+
+# Ask a single question (using positional argument - simpler syntax)
+python src/chat_cli.py "How do transformer models work?"
+
+# Combined options with positional question
+python src/chat_cli.py --agents "Math Expert,Coder" --model llama3 "Write a Python function to calculate factorial"
+```
+
 ### Convenience Scripts
 
-For easier startup and shutdown, you can use the provided scripts:
+For easier startup and shutdown of the web application, you can use the provided scripts:
 
 ```bash
 # Start the application

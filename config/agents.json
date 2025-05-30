@@ -5,12 +5,6 @@
     "model": "llama3",
     "custom_prompt": null
   },
-  "assistent": {
-    "name": "assistent",
-    "agent_type": "Assistant",
-    "model": "llama3",
-    "custom_prompt": null
-  },
   "forsker": {
     "name": "forsker",
     "agent_type": "Researcher",
@@ -55,13 +49,13 @@
   },
   "matematiker": {
     "name": "matematiker",
-    "agent_type": "Assistant",
+    "agent_type": "Math Expert",
     "model": "mistral",
     "custom_prompt": null
   },
   "kritiker": {
     "name": "kritiker",
-    "agent_type": "Assistant",
+    "agent_type": "Critic",
     "model": "llama3",
     "custom_prompt": null
   },
