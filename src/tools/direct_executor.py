@@ -48,9 +48,11 @@ def direct_execute_code(file_name: str, group_chat_name: str, language: str = "p
     
     lang_config = language_configs[language.lower()]
     
-    # Get workspace paths
-    workspace_root = Path("/Users/erling/code/llm-langgraph/workspaces")
-    workspace_path = workspace_root / group_chat_name
+    # Import workspace manager
+    from utils.workspace_manager import get_workspace_path
+    
+    # Get workspace paths using the utility function
+    workspace_path = get_workspace_path(group_chat_name, create_if_missing=True)
     code_dir = workspace_path / "code"
     output_dir = workspace_path / "output"
     

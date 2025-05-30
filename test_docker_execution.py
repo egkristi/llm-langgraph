@@ -14,9 +14,13 @@ test_group_chat = "test_chat"
 test_file = "test_script.py"
 language = "python"
 
-# Get workspace path
-workspace_root = Path("/Users/erling/code/llm-langgraph/workspaces")
-workspace_path = workspace_root / test_group_chat
+# Import workspace manager utility
+import sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+from utils.workspace_manager import get_workspace_path
+
+# Get workspace path dynamically
+workspace_path = get_workspace_path(test_group_chat, create_if_missing=True)
 code_dir = workspace_path / "code"
 output_dir = workspace_path / "output"
 

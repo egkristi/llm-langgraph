@@ -5,8 +5,11 @@ import json
 import time
 from typing import List, Dict, Any, Optional
 
-# Base path for all workspaces
-WORKSPACES_DIR = Path("/Users/erling/code/llm-langgraph/workspaces")
+# Determine the project root directory dynamically
+PROJECT_ROOT = Path(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+# Base path for all workspaces (relative to project root)
+WORKSPACES_DIR = PROJECT_ROOT / "workspaces"
 
 def ensure_workspace_dir():
     """Ensure the base workspaces directory exists."""

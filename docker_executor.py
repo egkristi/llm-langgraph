@@ -38,9 +38,13 @@ def main():
     print(f"File: {file_name}")
     print(f"Language: {language}")
     
-    # Check if the file exists
-    workspace_path = Path(f"/Users/erling/code/llm-langgraph/workspaces/{group_chat_name}/code")
-    file_path = workspace_path / file_name
+    # Import the workspace manager utility
+    from utils.workspace_manager import get_workspace_path
+    
+    # Get the workspace path using the utility function
+    workspace_path = get_workspace_path(group_chat_name, create_if_missing=False)
+    code_dir = workspace_path / "code"
+    file_path = code_dir / file_name
     
     if not file_path.exists():
         print(f"Error: File {file_path} does not exist")
@@ -70,8 +74,8 @@ def main():
         import traceback
         traceback.print_exc()
     
-    # Get the output file
-    output_dir = Path(f"/Users/erling/code/llm-langgraph/workspaces/{group_chat_name}/output")
+    # Get the output file using the workspace manager
+    output_dir = workspace_path / "output"
     output_files = [f for f in output_dir.glob("result_*.txt")]
     output_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
     

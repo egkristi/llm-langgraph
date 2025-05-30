@@ -202,33 +202,23 @@ class GroupChat:
                             import time
                             from pathlib import Path
                             
-                            # Get the full path to the code file
-                            workspace_root = Path("/Users/erling/code/llm-langgraph/workspaces")
+                            # Import the workspace manager utility
+                            from utils.workspace_manager import get_workspace_path
                             
-                            # Normalize group chat name: convert spaces to underscores and lowercase
-                            normalized_group_chat = self.group_chat_name.lower().replace(" ", "_")
+                            # Get the workspace path using the utility function
+                            workspace_path = get_workspace_path(self.group_chat_name, create_if_missing=True)
                             
-                            # Find the actual directory that exists
-                            if (workspace_root / normalized_group_chat).exists():
-                                group_chat_dir = normalized_group_chat
-                            else:
-                                # Try to find a matching directory with different casing
-                                found = False
-                                for dir_path in workspace_root.iterdir():
-                                    if dir_path.is_dir() and dir_path.name.lower() == normalized_group_chat:
-                                        group_chat_dir = dir_path.name
-                                        found = True
-                                        break
-                                if not found:
-                                    # Create the directory if it doesn't exist
-                                    group_chat_dir = normalized_group_chat
-                                    (workspace_root / group_chat_dir).mkdir(parents=True, exist_ok=True)
-                                    (workspace_root / group_chat_dir / "code").mkdir(exist_ok=True)
-                                    (workspace_root / group_chat_dir / "output").mkdir(exist_ok=True)
-                                    (workspace_root / group_chat_dir / "data").mkdir(exist_ok=True)
+                            # Ensure all necessary subdirectories exist
+                            code_dir = workspace_path / "code"
+                            output_dir = workspace_path / "output"
+                            data_dir = workspace_path / "data"
+                            
+                            code_dir.mkdir(exist_ok=True)
+                            output_dir.mkdir(exist_ok=True)
+                            data_dir.mkdir(exist_ok=True)
                             
                             # Create the full path to the code file
-                            code_path = workspace_root / group_chat_dir / "code" / file_name
+                            code_path = code_dir / file_name
                             
                             # Print some debugging info
                             print(f"Executing code file: {code_path} (exists: {code_path.exists()})")
@@ -258,8 +248,8 @@ class GroupChat:
                                 
                                 execution_time = time.time() - start_time
                                 
-                                # Get the output regardless of return code
-                                output_dir = workspace_root / group_chat_dir / "output"
+                                # Get the most recent output file from the output directory we defined earlier
+                                # output_dir is already defined when we set up the workspace directories
                                 # Get the most recent output file
                                 output_files = sorted(output_dir.glob("result_*.txt"), key=lambda f: f.stat().st_mtime, reverse=True)
                                 
