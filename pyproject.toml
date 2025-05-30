@@ -8,6 +8,7 @@ dependencies = [
     "langchain>=0.3.25",
     "langchain-community>=0.0.20",
     "langchain-core>=0.1.30",
+    "langchain-ollama>=0.3.0",
     "langgraph>=0.0.30",
     "ollama>=0.4.9",
     "streamlit>=1.45.1",

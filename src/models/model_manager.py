@@ -1,9 +1,18 @@
 from typing import Dict, List, Any, Optional
 import ollama
 import json
+import warnings
 from pathlib import Path
 from langchain_core.language_models import LLM
-from langchain_community.llms.ollama import Ollama
+
+# Suppress the deprecation warning
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="langchain_community.llms.ollama")
+
+# Import Ollama - use the new package if available, otherwise use the deprecated one
+try:
+    from langchain_ollama import OllamaLLM
+except ImportError:
+    from langchain_community.llms.ollama import Ollama as OllamaLLM
 
 # Path to models.json file in the config directory
 CONFIG_DIR = Path("config")
@@ -232,7 +241,7 @@ def get_model(model_name: str, host: str = "http://localhost:11434") -> LLM:
     cache_key = f"{model_name}@{host}"
     
     if cache_key not in _model_cache:
-        _model_cache[cache_key] = Ollama(
+        _model_cache[cache_key] = OllamaLLM(
             model=model_name,
             base_url=host,
             temperature=0.7,
