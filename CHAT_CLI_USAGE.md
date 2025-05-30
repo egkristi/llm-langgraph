@@ -59,8 +59,11 @@ cd /path/to/llm-langgraph
 # Install dependencies using uv
 uv pip install -e .
 
-# Run the CLI tool
+# Run the CLI tool (option 1: directly with Python)
 python src/chat_cli.py --help
+
+# Run the CLI tool (option 2: using uv run)
+uv run python src/chat_cli.py --help
 ```
 
 ## Basic Usage
@@ -68,7 +71,11 @@ python src/chat_cli.py --help
 The simplest way to use the CLI is to provide a question directly as a positional argument:
 
 ```bash
+# Option 1: Direct Python execution
 python src/chat_cli.py "What is the capital of France?"
+
+# Option 2: Using uv run
+uv run python src/chat_cli.py "What is the capital of France?"
 ```
 
 This will create a default set of agents (Assistant, Researcher, and Manager) and have them collaborate to answer your question.
@@ -96,7 +103,11 @@ The CLI supports the following parameters:
 Ask a question and get a one-time response:
 
 ```bash
+# Using Python directly
 python src/chat_cli.py "What is quantum computing?"
+
+# Using uv run
+uv run python src/chat_cli.py "What is quantum computing?"
 ```
 
 ### Interactive Mode
@@ -104,7 +115,11 @@ python src/chat_cli.py "What is quantum computing?"
 Start an interactive session where you can ask multiple questions:
 
 ```bash
+# Using Python directly
 python src/chat_cli.py --interactive
+
+# Using uv run
+uv run python src/chat_cli.py --interactive
 ```
 
 The interactive mode process flow is as follows:
@@ -264,7 +279,12 @@ graph TD
 
 ## Example Commands
 
-Here are some example commands that have been tested with the CLI:
+Here are some example commands that have been tested with the CLI. All examples can be run in two ways:
+
+- **Direct Python execution**: `python src/chat_cli.py [options]`
+- **Using UV**: `uv run python src/chat_cli.py [options]`
+
+For brevity, only the Python version is shown in the examples below, but you can use either approach:
 
 1. **Get help:**
    ```bash
