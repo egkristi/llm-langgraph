@@ -780,6 +780,10 @@ with st.expander("Agent Configuration", expanded=False):
     if st.session_state.agents:
         st.subheader("Created Agents")
         
+        # Initialize agent_to_edit in session state if it doesn't exist
+        if "agent_to_edit" not in st.session_state:
+            st.session_state.agent_to_edit = None
+            
         # Use columns for better layout
         agent_cols = st.columns(3)
         for i, (agent_name, agent) in enumerate(st.session_state.agents.items()):
@@ -788,22 +792,128 @@ with st.expander("Agent Configuration", expanded=False):
                 st.write(f"Type: {agent.agent_type}")
                 st.write(f"Model: {agent.model}")
                 
-                # Delete button for each agent
-                if st.button(f"Delete {agent_name}"):
-                    del st.session_state.agents[agent_name]
+                # Action buttons
+                col1, col2 = st.columns(2)
+                with col1:
+                    # Edit button for each agent
+                    if st.button(f"Edit", key=f"edit_{agent_name}"):
+                        st.session_state.agent_to_edit = agent_name
+                        
+                with col2:
+                    # Delete button for each agent
+                    if st.button(f"Delete", key=f"delete_{agent_name}"):
+                        del st.session_state.agents[agent_name]
+                        # If this is the agent being edited, clear the edit state
+                        if st.session_state.agent_to_edit == agent_name:
+                            st.session_state.agent_to_edit = None
+                        st.rerun()
+        
+        # Edit form appears when an agent is selected for editing
+        if st.session_state.agent_to_edit:
+            agent_name = st.session_state.agent_to_edit
+            agent = st.session_state.agents[agent_name]
+            
+            st.divider()
+            st.subheader(f"Edit Agent: {agent_name}")
+            
+            # Agent type selection
+            agent_types = ["Assistant", "Researcher", "Coder", "Math Expert", "Critic", "Manager", "Code Runner", "Custom"]
+            new_agent_type = st.selectbox("Agent Type", agent_types, index=agent_types.index(agent.agent_type) if agent.agent_type in agent_types else 0, key="edit_agent_type")
+            
+            # Model selection
+            if "available_models" in st.session_state:
+                new_model = st.selectbox("Agent Model", st.session_state.available_models, index=st.session_state.available_models.index(agent.model) if agent.model in st.session_state.available_models else 0, key="edit_agent_model")
+            else:
+                new_model = st.text_input("Agent Model (Ollama not connected)", value=agent.model, key="edit_agent_model_text")
+            
+            # Custom prompt for custom agent type
+            new_custom_prompt = None
+            if new_agent_type == "Custom":
+                # Show the current custom prompt if it exists
+                current_prompt = agent.custom_prompt if agent.custom_prompt else ""
+                new_custom_prompt = st.text_area("Custom Agent Prompt", value=current_prompt, height=150, key="edit_custom_prompt")
+                
+            # Save and Cancel buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Save Changes", type="primary"):
+                    try:
+                        # Create a new agent with the updated values
+                        updated_agent = create_agent(
+                            name=agent_name,
+                            agent_type=new_agent_type,
+                            model=new_model,
+                            custom_prompt=new_custom_prompt
+                        )
+                        
+                        # Replace the old agent with the updated one
+                        st.session_state.agents[agent_name] = updated_agent
+                        
+                        # Save the updated configuration
+                        _save_current_configuration()
+                        
+                        # Clear the edit state
+                        st.session_state.agent_to_edit = None
+                        
+                        st.success(f"Agent {agent_name} updated successfully")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error updating agent: {str(e)}")
+                        if st.session_state.debug_mode:
+                            st.exception(e)
+            
+            with col2:
+                if st.button("Cancel"):
+                    st.session_state.agent_to_edit = None
                     st.rerun()
 
 # Initialize expander state if it doesn't exist
 if "group_chat_expander_open" not in st.session_state:
     st.session_state.group_chat_expander_open = False
+
+# Initialize active tab tracking if it doesn't exist
+if "active_gc_tab" not in st.session_state:
+    st.session_state.active_gc_tab = None  # Default to no active tab
     
 # Make Group Chat Management collapsible and track its state
 with st.expander("Group Chat Management", expanded=st.session_state.group_chat_expander_open):
-    # Create New Group Chat tab and Saved Group Chat tab
-    tab1, tab2, tab3, tab4 = st.tabs(["Create New Group Chat", "Use Saved Group Chat", "Manage Configurations", "Conversations"])
+    # Define tab names
+    tab_names = ["Create New Group Chat", "Use Saved Group Chat", "Manage Configurations", "Conversations"]
+    
+    # Create a container for the tab navigation
+    tab_cols = st.columns(len(tab_names))
+    
+    # Create custom tab navigation that will maintain state
+    for i, (name, col) in enumerate(zip(tab_names, tab_cols)):
+        # Determine if this tab is active
+        is_active = (i == st.session_state.active_gc_tab)
+        
+        # Tab styling and interaction
+        if is_active:
+            # Active tab styling with deselect option
+            if col.button(f"✓ {name}", key=f"tab_btn_{i}"):
+                # Clicking an active tab deselects it
+                st.session_state.active_gc_tab = None
+                st.rerun()
+        else:
+            # Inactive tab with clickable button
+            if col.button(name, key=f"tab_btn_{i}"):
+                st.session_state.active_gc_tab = i
+                st.rerun()
+    
+    # Add a divider for visual separation
+    st.divider()
+    
+    # Create placeholder tabs to maintain the same code structure
+    # We'll only show content for the active tab
+    tab1 = tab2 = tab3 = tab4 = st.empty()
 
-# Tab 1: Create New Group Chat
-with tab1:
+# Display content only if a tab is selected
+if st.session_state.active_gc_tab is None:
+    # No tab selected - show welcome message
+    st.markdown("### Group Chat Management")
+    st.info("Select an option above to create, use, or manage your group chats.")
+elif st.session_state.active_gc_tab == 0:  # Tab 1: Create New Group Chat
     if st.session_state.agents:
         # Custom name for the group chat configuration
         group_chat_name = st.text_input("Group Chat Name", value="My Group Chat", 
@@ -815,24 +925,34 @@ with tab1:
             options=list(st.session_state.agents.keys())
         )
         
-        # Advanced configuration section with a divider and subheader
-        st.divider()
-        st.subheader("Advanced Configuration")
-        
-        # Consensus and rounds options
-        col1, col2 = st.columns(2)
-        with col1:
-            require_consensus = st.checkbox("Require Consensus", value=True, 
-                                          help="When enabled, agents will discuss until consensus is reached or max rounds is hit")
-        with col2:
-            max_rounds = st.slider("Maximum Discussion Rounds", min_value=1, max_value=99, value=5,
-                                  help="Maximum number of back-and-forth rounds before concluding")
-        
-        # Explain how consensus works
-        if require_consensus:
-            st.info("🤝 **Consensus Mode:** Agents will have multiple rounds of discussion. A Manager agent will "
-                   "evaluate when consensus is reached. If no Manager agent exists, a Critic or another agent "
-                   "will serve as the discussion manager.")
+        # Only show the advanced configuration if agents are selected
+        if group_chat_agents and len(group_chat_agents) >= 2:
+            # Advanced configuration section with a divider and subheader
+            st.divider()
+            st.subheader("Advanced Configuration")
+            
+            # Consensus and rounds options
+            col1, col2 = st.columns(2)
+            with col1:
+                require_consensus = st.checkbox("Require Consensus", value=True, 
+                                             help="When enabled, agents will discuss until consensus is reached or max rounds is hit")
+            with col2:
+                max_rounds = st.slider("Maximum Discussion Rounds", min_value=1, max_value=99, value=5,
+                                      help="Maximum number of back-and-forth rounds before concluding")
+            
+            # Explain how consensus works
+            if require_consensus:
+                st.info("🤝 **Consensus Mode:** Agents will have multiple rounds of discussion. A Manager agent will "
+                       "evaluate when consensus is reached. If no Manager agent exists, a Critic or another agent "
+                       "will serve as the discussion manager.")
+        else:
+            # When no agents are selected, show a message
+            require_consensus = True
+            max_rounds = 5
+            if group_chat_agents:
+                st.info("Please select at least 2 agents to configure the group chat settings.")
+            else:
+                st.info("Select agents from the list to get started.")
         
         # Setup group chat
         col1, col2 = st.columns(2)
@@ -924,8 +1044,7 @@ with tab1:
     else:
         st.info("Create some agents first to set up a group chat")
 
-# Tab 2: Use Saved Group Chat
-with tab2:
+elif st.session_state.active_gc_tab == 1:  # Tab 2: Use Saved Group Chat
     if st.session_state.all_saved_group_chats:
         # Display saved chats with nice formatting
         st.subheader("Select a Saved Configuration")
@@ -1066,8 +1185,11 @@ with tab2:
     else:
         st.info("No saved group chat configurations found. Create one in the 'Create New Group Chat' tab.")
 
-# Tab 3: Manage Configurations
-with tab3:
+elif st.session_state.active_gc_tab == 2:  # Tab 3: Manage Configurations
+    # Initialize group_chat_to_edit in session state if it doesn't exist
+    if "group_chat_to_edit" not in st.session_state:
+        st.session_state.group_chat_to_edit = None
+        
     if st.session_state.all_saved_group_chats:
         st.subheader("Manage Group Chat Configurations")
         
@@ -1075,6 +1197,10 @@ with tab3:
         for config_name in list(st.session_state.all_saved_group_chats.keys()):
             config = st.session_state.all_saved_group_chats[config_name]
             
+            # Skip if this is the one being edited (it will be shown in the edit form below)
+            if st.session_state.group_chat_to_edit == config_name:
+                continue
+                
             # Create a container for each configuration
             with st.container():
                 col1, col2 = st.columns([4, 1])
@@ -1085,10 +1211,21 @@ with tab3:
                     st.write(f"Consensus: {'Yes' if config['require_consensus'] else 'No'} | Max Rounds: {config['max_rounds']}")
                 
                 with col2:
-                    # Clone and delete buttons
-                    btn_col1, btn_col2 = st.columns(2)
+                    # Action buttons
+                    btn_col1, btn_col2, btn_col3 = st.columns(3)
                     
+                    # Edit button
                     with btn_col1:
+                        if st.button("✏️", key=f"edit_{config_name}", help=f"Edit '{config_name}'"):
+                            st.session_state.group_chat_to_edit = config_name
+                            # Keep the expander open during editing
+                            st.session_state.group_chat_expander_open = True
+                            # Set active tab to Manage Configurations (tab3, index 2)
+                            st.session_state.active_gc_tab = 2
+                            st.rerun()
+                    
+                    # Clone button
+                    with btn_col2:
                         if st.button("🔄", key=f"clone_{config_name}", help=f"Clone '{config_name}'"):
                             # Create a copy with a new name
                             new_name = f"{config_name} (Copy)"
@@ -1110,7 +1247,8 @@ with tab3:
                             st.success(f"Cloned '{config_name}' to '{new_name}'")
                             st.rerun()
                     
-                    with btn_col2:
+                    # Delete button
+                    with btn_col3:
                         if st.button("❌", key=f"delete_{config_name}", help=f"Delete '{config_name}'"):
                             # Remove the configuration from both collections
                             if config_name in st.session_state.saved_group_chats:
@@ -1131,11 +1269,150 @@ with tab3:
                 
                 # Add a divider between configurations
                 st.divider()
+        
+        # Edit form for the selected group chat
+        if st.session_state.group_chat_to_edit and st.session_state.group_chat_to_edit in st.session_state.all_saved_group_chats:
+            config_name = st.session_state.group_chat_to_edit
+            config = st.session_state.all_saved_group_chats[config_name]
+            
+            # Initialize form fields in session state if needed
+            if "edit_form_initialized" not in st.session_state or st.session_state.edit_form_initialized != config_name:
+                st.session_state.edit_group_chat_name = config_name
+                st.session_state.edit_group_chat_agents = config["agent_names"]
+                st.session_state.edit_require_consensus = config["require_consensus"]
+                st.session_state.edit_max_rounds = config["max_rounds"]
+                st.session_state.edit_form_initialized = config_name
+            
+            st.divider()
+            st.subheader(f"Edit Group Chat: {config_name}")
+            
+            # Edit form with explicitly pre-filled values from session state
+            # New name for the group chat
+            new_name = st.text_input("Group Chat Name", 
+                                   value=st.session_state.edit_group_chat_name, 
+                                   key="edit_group_chat_name")
+            
+            # Select agents for the group chat - make sure we have existing agents selected
+            available_agents = list(st.session_state.agents.keys())
+            
+            # Filter to keep only agents that exist in the available_agents list
+            default_agents = [a for a in st.session_state.edit_group_chat_agents if a in available_agents]
+            
+            selected_agents = st.multiselect(
+                "Select Agents for Group Chat",
+                options=available_agents,
+                default=default_agents,
+                key="edit_group_chat_agents"
+            )
+            
+            # Initialize values in case they weren't set properly
+            if "edit_require_consensus" not in st.session_state:
+                st.session_state.edit_require_consensus = config["require_consensus"]
+            if "edit_max_rounds" not in st.session_state:
+                st.session_state.edit_max_rounds = config["max_rounds"]
+                
+            # Only show advanced configuration if agents are selected
+            if selected_agents and len(selected_agents) >= 2:
+                # Show a divider and heading for the advanced section
+                st.divider()
+                st.subheader("Advanced Configuration")
+                
+                # Consensus and rounds options
+                col1, col2 = st.columns(2)
+                with col1:
+                    require_consensus = st.checkbox("Require Consensus", 
+                                                  value=st.session_state.edit_require_consensus, 
+                                                  key="edit_require_consensus",
+                                                  help="When enabled, agents will discuss until consensus is reached or max rounds is hit")
+                with col2:
+                    max_rounds = st.number_input("Maximum Discussion Rounds", 
+                                               min_value=1, max_value=99, 
+                                               value=st.session_state.edit_max_rounds,
+                                               key="edit_max_rounds",
+                                               help="Maximum number of discussion rounds before presenting results")
+                
+                # Explain how consensus works
+                if require_consensus:
+                    st.info("🤝 **Consensus Mode:** Agents will have multiple rounds of discussion. A Manager agent will "
+                           "evaluate when consensus is reached. If no Manager agent exists, a Critic or another agent "
+                           "will serve as the discussion manager.")
+            else:
+                # Default values when no agents are selected - assign directly, don't try to access session state
+                require_consensus = config["require_consensus"]
+                max_rounds = config["max_rounds"]
+                
+                # Show a message
+                if selected_agents:
+                    st.info("Please select at least 2 agents to configure advanced settings.")
+                else:
+                    st.info("Select agents from the list to configure this group chat.")
+            
+            # Save and Cancel buttons
+            save_col, cancel_col = st.columns(2)
+            with save_col:
+                if st.button("Save Changes", key="save_group_chat_changes", type="primary"):
+                    # Check if we have enough agents selected
+                    if len(selected_agents) < 2:
+                        st.error("Please select at least 2 agents for the group chat.")
+                    else:
+                        try:
+                            # Create the updated config
+                            updated_config = {
+                                "agent_names": selected_agents,
+                                "require_consensus": require_consensus,
+                                "max_rounds": int(max_rounds),
+                                "created_at": config.get("created_at", time.strftime("%Y-%m-%d %H:%M:%S")),
+                                "active": config.get("active", False)
+                            }
+                            
+                            # Handle name change if needed
+                            if new_name != config_name and new_name:
+                                # Check if the new name already exists
+                                if new_name in st.session_state.all_saved_group_chats:
+                                    st.error(f"A group chat with the name '{new_name}' already exists. Please choose a different name.")
+                                else:
+                                    # Remove the old config
+                                    del st.session_state.all_saved_group_chats[config_name]
+                                    if config_name in st.session_state.saved_group_chats:
+                                        del st.session_state.saved_group_chats[config_name]
+                                    
+                                    # Add with the new name
+                                    st.session_state.all_saved_group_chats[new_name] = updated_config
+                                    st.session_state.saved_group_chats[new_name] = updated_config
+                                    
+                                    # Update active group chat reference if needed
+                                    if st.session_state.active_group_chat == config_name:
+                                        st.session_state.active_group_chat = new_name
+                                    
+                                    # Save the configuration
+                                    _save_current_configuration()
+                                    st.success(f"Group chat renamed from '{config_name}' to '{new_name}' and updated.")
+                                    st.session_state.group_chat_to_edit = None
+                                    st.rerun()
+                            else:
+                                # Just update the existing config
+                                st.session_state.all_saved_group_chats[config_name] = updated_config
+                                if config_name in st.session_state.saved_group_chats:
+                                    st.session_state.saved_group_chats[config_name] = updated_config
+                                
+                                # Save the configuration
+                                _save_current_configuration()
+                                st.success(f"Group chat '{config_name}' updated successfully.")
+                                st.session_state.group_chat_to_edit = None
+                                st.rerun()
+                        except Exception as e:
+                            st.error(f"Error updating group chat: {str(e)}")
+                            if st.session_state.debug_mode:
+                                st.exception(e)
+            
+            with cancel_col:
+                if st.button("Cancel", key="cancel_group_chat_edit"):
+                    st.session_state.group_chat_to_edit = None
+                    st.rerun()
     else:
         st.info("No saved group chat configurations found. Create one in the 'Create New Group Chat' tab.")
 
-# Tab 4: Conversations
-with tab4:
+elif st.session_state.active_gc_tab == 3:  # Tab 4: Conversations
     st.subheader("Saved Conversations")
     
     # Get list of all saved conversations

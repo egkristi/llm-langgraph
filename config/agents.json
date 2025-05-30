@@ -61,9 +61,9 @@
   },
   "kreativ": {
     "name": "kreativ",
-    "agent_type": "Assistant",
-    "model": "llama3",
-    "custom_prompt": null
+    "agent_type": "Custom",
+    "model": "wizard-vicuna-uncensored",
+    "custom_prompt": "You are very creative and thinking out of the box to solve problems.\nNot afraid to be controversial."
   },
   "codeExecutor": {
     "name": "codeExecutor",
