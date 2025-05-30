@@ -4,12 +4,45 @@ version = "0.1.0"
 description = "Multi-agent LLM chat with groupchat functionality using LangGraph and Ollama"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "LLM-LangGraph Contributors" },
+]
+
 dependencies = [
+    # Core LangChain and LangGraph
     "langchain>=0.3.25",
     "langchain-community>=0.0.20",
     "langchain-core>=0.1.30",
-    "langchain-ollama>=0.3.0",
     "langgraph>=0.0.30",
+    
+    # LLM Integrations
+    "langchain-ollama>=0.3.0",
     "ollama>=0.4.9",
+    
+    # Web UI
     "streamlit>=1.45.1",
+    
+    # Docker Support for Code Execution
+    "docker>=7.0.0",
+    
+    # Utilities
+    "pyyaml>=6.0",
+    "tenacity>=8.2.0",
+    "typing-extensions>=4.5.0",
+    "python-dotenv>=1.0.0",
+    "jsonpatch>=1.33",
 ]
+
+[project.urls]
+homepage = "https://github.com/yourusername/llm-langgraph"
+repository = "https://github.com/yourusername/llm-langgraph"
+
+[project.scripts]
+lang-chat = "src.chat_cli:main"
+
+[tool.ruff]
+extend-select = ["E", "F", "I"]
+ignore = ["E203"]
+target-version = "py311"
+line-length = 100

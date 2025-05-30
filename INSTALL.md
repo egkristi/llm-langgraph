@@ -2,6 +2,42 @@
 
 This guide provides detailed instructions for installing all prerequisites needed to run the LLM-LangGraph application on macOS, Linux, and Windows.
 
+```mermaid
+flowchart TD
+    Start[Start Installation] --> Prerequisites[Install Prerequisites]
+    
+    subgraph "Core Dependencies"
+        Git[1. Git]
+        Python[2. Python 3.13+]
+        UV[3. UV Package Manager]
+        Ollama[4. Ollama]
+        Docker[5. Docker]
+    end
+    
+    Prerequisites --> Git
+    Prerequisites --> Python
+    Prerequisites --> UV
+    Prerequisites --> Ollama
+    Prerequisites --> Docker
+    
+    Git --> Clone[Clone Repository]
+    Python --> Venv[Create Virtual Environment]
+    UV --> InstallDeps[Install Dependencies]
+    Ollama --> PullModels[Pull LLM Models]
+    Docker --> SetupExec[Setup Code Execution]
+    
+    Clone --> Venv
+    Venv --> InstallDeps
+    InstallDeps --> PullModels
+    PullModels --> SetupExec
+    SetupExec --> RunApp[Run Application]
+    
+    RunApp --> WebUI[Web UI]
+    RunApp --> CLI[Command Line Interface]
+    
+    class CoreDependencies,WebUI,CLI emphasis
+```
+
 ## Quick Installation with Homebrew (macOS)
 
 If you're using macOS, you can install most dependencies with Homebrew for a streamlined setup:
@@ -218,6 +254,53 @@ After running these commands, you should have a fully functional LLM-LangGraph e
 - **RAM**: Minimum 8GB, recommended 16GB or more (for running LLMs)
 - **Disk Space**: At least 10GB free space (for models and application)
 - **Internet Connection**: Required for the initial setup and model downloads
+
+```mermaid
+flowchart LR
+    OS{Operating System?}
+    
+    OS -->|macOS| Mac[macOS Path]
+    OS -->|Linux| Linux[Linux Path]
+    OS -->|Windows| Windows[Windows Path]
+    
+    subgraph "macOS Installation"
+        Homebrew[Install with Homebrew] --> BrewGit[brew install git]
+        Homebrew --> BrewPython[brew install python@3.13]
+        Homebrew --> BrewUV[brew install uv]
+        Homebrew --> BrewOllama[brew install ollama]
+        Homebrew --> BrewDocker[brew install colima docker]
+    end
+    
+    subgraph "Linux Installation"
+        AptGit[apt install git]
+        BuildPython[Build Python 3.13 from source]
+        PipUV[pip install uv]
+        InstallOllama[Install Ollama from binary]
+        DockerCE[Install Docker CE]
+    end
+    
+    subgraph "Windows Installation"
+        WingetGit[winget install Git.Git]
+        WingetPython[winget install Python.Python.3.13]
+        WingetUV[pip install uv]
+        WinOllama[Download Ollama installer]
+        DockerDesktop[Install Docker Desktop]
+    end
+    
+    Mac --> Homebrew
+    Linux --> AptGit
+    Linux --> BuildPython
+    Linux --> PipUV
+    Linux --> InstallOllama
+    Linux --> DockerCE
+    Windows --> WingetGit
+    Windows --> WingetPython
+    Windows --> WingetUV
+    Windows --> WinOllama
+    Windows --> DockerDesktop
+    
+    class Mac,Linux,Windows emphasis
+```
 
 ## Prerequisites
 
@@ -489,9 +572,46 @@ $env:PATH += ";$ollamaExtractPath"
 
 Docker is required for code execution in secure containers.
 
+```mermaid
+flowchart TD
+    DockerSetup[Docker Setup Options]
+    
+    DockerSetup -->|"macOS"| MacOptions{macOS Options}
+    DockerSetup -->|"Linux"| LinuxOptions{Linux Options}
+    DockerSetup -->|"Windows"| WinOptions{Windows Options}
+    
+    MacOptions -->|"Recommended"| Colima[Colima]
+    MacOptions -->|"Alternative"| DockerDesktopMac[Docker Desktop]
+    MacOptions -->|"Alternative"| OrbStack[OrbStack]
+    
+    LinuxOptions -->|"Ubuntu/Debian"| AptDocker[Docker CE via apt]
+    LinuxOptions -->|"Fedora/RHEL"| DnfDocker[Docker CE via dnf]
+    LinuxOptions -->|"Other"| ScriptDocker[Docker CE via script]
+    
+    WinOptions -->|"Recommended"| DockerDesktopWin[Docker Desktop]
+    WinOptions -->|"Alternative"| WSL2[Docker in WSL2]
+    
+    Colima -->|"Start with"| ColimaConfig[colima start --cpu 4 --memory 8]
+    DockerDesktopMac -->|"Configure with"| DockerDesktopMacConfig[Resource Settings in UI]
+    OrbStack -->|"Configure with"| OrbStackConfig[Resource Settings in UI]
+    
+    AptDocker -->|"Post-Install"| AddUserDocker[Add user to docker group]
+    DnfDocker -->|"Post-Install"| AddUserDockerRHEL[Add user to docker group]
+    ScriptDocker -->|"Post-Install"| AddUserDockerScript[Add user to docker group]
+    
+    DockerDesktopWin -->|"Configure with"| DockerDesktopWinConfig[Resource Settings in UI]
+    WSL2 -->|"Configure with"| WSL2Config[wsl --update and wsl.conf]
+    
+    AddUserDocker -->|"Apply Changes"| NewGrp[newgrp docker]
+    AddUserDockerRHEL -->|"Apply Changes"| NewGrp
+    AddUserDockerScript -->|"Apply Changes"| NewGrp
+    
+    class Colima,DockerDesktopWin emphasis
+```
+
 #### macOS
 
-**Option 1: Colima (RECOMMENDED)**
+**Option 1: Colima (Recommended for macOS)**
 
 Colima is a lightweight Docker Desktop alternative that doesn't require a license for commercial use and is ideal for LLM-LangGraph:
 
@@ -1112,8 +1232,80 @@ Remove-Item -Recurse -Force "$env:USERPROFILE\.ollama"
 # winget uninstall Python.Python.3.13
 ```
 
+## Workspace System
+
+After installation, the application uses a workspace system to store and manage files. Each group chat has a persistent workspace with three folders:
+
+```mermaid
+graph TD
+    Root[/Users/erling/code/llm-langgraph/workspaces] -->|"Contains"| GroupChats[Group Chat Workspaces]
+    GroupChats -->|"Example"| Chat1[CLI Chat]
+    GroupChats -->|"Example"| Chat2[Web UI Chat]
+    
+    Chat1 -->|"Contains"| CodeDir1[code/]
+    Chat1 -->|"Contains"| DataDir1[data/]
+    Chat1 -->|"Contains"| OutputDir1[output/]
+    
+    CodeDir1 -->|"Stores"| SourceCode[Source Code Files]
+    DataDir1 -->|"Stores"| ConfigFiles[Configuration Files]
+    OutputDir1 -->|"Stores"| Results[Execution Results]
+    
+    subgraph "Workspace Usage"
+        CodeRunner[Code Runner Agent] -->|"Reads"| SourceCode
+        CodeRunner -->|"Executes in"| Docker[Docker Container]
+        Docker -->|"Writes"| Results
+        Docker -->|"May Use"| ConfigFiles
+    end
+```
+
+- **code/**: For source code files that can be executed
+- **data/**: For input data, configuration files, and other resources
+- **output/**: For execution results and generated output
+
+Files in the workspace persist between conversations, allowing for iterative development and testing.
+
+## System Architecture After Installation
+
+Once all components are installed, they interact as follows:
+
+```mermaid
+graph TD
+    User[User] <-->|"Interacts via"| Interface{Interfaces}
+    Interface -->|"Web UI"| Streamlit[Streamlit App]
+    Interface -->|"CLI"| CommandLine[Command Line Tool]
+    
+    subgraph "LLM Backend"
+        Streamlit --> Ollama
+        CommandLine --> Ollama
+        Ollama[Ollama Service] -->|"Loads"| Models[(LLM Models)]
+    end
+    
+    subgraph "Agent System"
+        Streamlit -->|"Creates"| Agents[LangChain Agents]
+        CommandLine -->|"Creates"| Agents
+        Agents -->|"Uses"| LangGraph[LangGraph]
+        Agents -->|"Coordinate via"| GroupChat[Group Chat]
+    end
+    
+    subgraph "Code Execution"
+        Agents -->|"May execute code"| Docker[Docker]
+        Docker -->|"Secure execution"| Container[Isolated Container]
+    end
+    
+    subgraph "Storage"
+        Config[(Configuration Files)]
+        Convos[(Conversation History)]
+        Workspaces[(Workspace Files)]
+    end
+    
+    Streamlit -->|"Reads/Writes"| Storage
+    CommandLine -->|"Reads/Writes"| Storage
+    
+    class LLM Backend,Agent System,Code Execution,Storage emphasis
+```
+
 ## Next Steps
 
-Once installation is complete, refer to the [README.md](README.md) for usage instructions.
+Once installation is complete, refer to the [README.md](README.md) for usage instructions and [CHAT_CLI_USAGE.md](CHAT_CLI_USAGE.md) for detailed information on using the command-line interface.
 
 For further assistance, please open an issue on the project's GitHub repository.

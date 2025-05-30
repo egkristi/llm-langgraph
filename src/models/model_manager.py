@@ -48,56 +48,37 @@ class ModelManager:
     def list_available_models(self) -> list:
         """List all available models from Ollama."""
         try:
-            # Set Ollama base URL before making the API call
-            original_base_url = ollama.BASE_URL
-            ollama.BASE_URL = self.ollama_host
+            # Use the current Ollama client API (updated for newer versions)
+            client = ollama.Client(host=self.ollama_host)
+            response = client.list()
             
-            # Make the API call
-            response = ollama.list()
+            # Extract model names from the response
+            models = []
             
-            # Restore original base URL
-            ollama.BASE_URL = original_base_url
-            
-            # Check if response has models attribute (object format)
-            if hasattr(response, 'models') and isinstance(response.models, list):
-                models = []
-                for model in response.models:
-                    if hasattr(model, 'model'):
-                        # Extract model name (removing ':latest' if present)
-                        model_name = model.model.split(':')[0] if ':' in model.model else model.model
-                        models.append(model_name)
-                    else:
-                        # Fallback to string representation
-                        models.append(str(model))
-                return models
-            
-            # Check dict format as fallback
+            # Handle different response formats based on ollama package version
             if isinstance(response, dict) and 'models' in response:
-                if isinstance(response['models'], list):
-                    models = []
-                    for model in response['models']:
-                        if isinstance(model, dict):
-                            # Try different field names that might contain the model name
-                            for field in ['model', 'name', 'id']:
-                                if field in model:
-                                    model_name = model[field]
-                                    # Remove version tag if present
-                                    if isinstance(model_name, str) and ':' in model_name:
-                                        model_name = model_name.split(':')[0]
-                                    models.append(model_name)
-                                    break
-                            else:
-                                # If no recognized fields, use string representation
-                                models.append(str(model))
-                    return models
+                # New format with models list in the response
+                for model in response['models']:
+                    if isinstance(model, dict) and 'name' in model:
+                        # Extract model name (removing ':latest' if present)
+                        model_name = model['name'].split(':')[0] if ':' in model['name'] else model['name']
+                        models.append(model_name)
+            elif isinstance(response, list):
+                # Direct list of model dictionaries format
+                for model in response:
+                    if isinstance(model, dict):
+                        # Try different field names that might contain the model name
+                        for field in ['name', 'model', 'id']:
+                            if field in model:
+                                model_name = model[field]
+                                # Remove version tag if present
+                                if isinstance(model_name, str) and ':' in model_name:
+                                    model_name = model_name.split(':')[0]
+                                models.append(model_name)
+                                break
             
-            # If response is a dict without models key but has other keys, use those as fallback
-            if isinstance(response, dict) and len(response) > 0 and 'models' not in response:
-                print("Unexpected Ollama response format, attempting to extract model names")
-                return list(response.keys())
-            
-            print("Could not parse Ollama API response")
-            return []
+            return models
+                          
         except Exception as e:
             print(f"Error listing models: {str(e)}")
             return []
@@ -158,15 +139,11 @@ class ModelManager:
     def pull_model(self, model_name: str) -> bool:
         """Pull a new model from Ollama."""
         try:
-            # Set Ollama base URL before making the API call
-            original_base_url = ollama.BASE_URL
-            ollama.BASE_URL = self.ollama_host
+            # Use the current Ollama client API (updated for newer versions)
+            client = ollama.Client(host=self.ollama_host)
             
             # Pull the model
-            ollama.pull(model_name)
-            
-            # Restore original base URL
-            ollama.BASE_URL = original_base_url
+            client.pull(model_name)
             
             # Update installed models list
             models_data = self.load_models_file()

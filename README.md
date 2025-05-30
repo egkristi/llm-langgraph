@@ -27,6 +27,8 @@ A Streamlit application that leverages LangGraph to create multi-agent conversat
 
 ## System Architecture
 
+### High-Level Architecture
+
 ```mermaid
 graph TD
     User[User] <--> |Interacts with| WebUI[Streamlit Web UI]
@@ -66,10 +68,169 @@ graph TD
     Debug --> |Displays| Timing[Performance Metrics]
 ```
 
+### Detailed Technical Architecture
+
+```mermaid
+graph TD
+    classDef core fill:#f9f,stroke:#333,stroke-width:2px
+    classDef interface fill:#bbf,stroke:#333,stroke-width:1px
+    classDef storage fill:#bfb,stroke:#333,stroke-width:1px
+    classDef execution fill:#fbf,stroke:#333,stroke-width:1px
+    
+    %% Main Components
+    User[User]:::interface
+    
+    %% User Interfaces
+    User <--> CLI[Command Line Interface<br>src/chat_cli.py]:::interface
+    User <--> WebUI[Web UI<br>src/app.py]:::interface
+    
+    %% Core Application Flow
+    subgraph "Core Application Flow"
+        direction TB
+        
+        WebUI --> AgentFactory[Agent Factory<br>src/agents/agent_factory.py]:::core
+        CLI --> AgentFactory
+        
+        AgentFactory --> AgentConfig[Agent Configuration<br>src/utils/config.py]:::core
+        AgentConfig --> AgentTypes[(Agent Types<br>JSON Configuration)]:::storage
+        
+        AgentFactory --> ModelManager[Model Manager<br>src/models/model_manager.py]:::core
+        ModelManager <--> OllamaClient[Ollama Client<br>langchain_ollama]:::core
+        OllamaClient <--> OllamaService[Ollama Service]:::execution
+        
+        WebUI --> GroupChatCreator[Group Chat Creator<br>src/graph/group_chat.py]:::core
+        CLI --> GroupChatCreator
+        
+        GroupChatCreator --> GroupChat[Group Chat Manager<br>src/graph/group_chat.py]:::core
+        GroupChat --> MessageProcessor[Message Processor<br>src/utils/message_processor.py]:::core
+        
+        GroupChat --> ConversationMemory[Conversation Memory<br>src/memory/conversation_memory.py]:::core
+        ConversationMemory --> ConvoFiles[(Conversation Files<br>JSON Storage)]:::storage
+        
+        MessageProcessor --> CodeExtractor[Code Extractor<br>src/utils/code_extractor.py]:::core
+        CodeExtractor --> WorkspaceManager[Workspace Manager<br>src/utils/workspace_manager.py]:::core
+    end
+    
+    %% Workspace System
+    subgraph "Workspace System"
+        direction TB
+        WorkspaceManager --> WorkspaceRoot[/workspaces Directory/]:::storage
+        WorkspaceRoot --> ChatWorkspaces[Chat-Specific Directories]:::storage
+        ChatWorkspaces --> CodeDir[code/ Directory]:::storage
+        ChatWorkspaces --> DataDir[data/ Directory]:::storage
+        ChatWorkspaces --> OutputDir[output/ Directory]:::storage
+    end
+    
+    %% Tool Registry and Tools
+    subgraph "Tool Registry and Tools"
+        direction TB
+        AgentFactory --> ToolRegistry[Tool Registry<br>src/tools/tool_registry.py]:::core
+        
+        ToolRegistry --> ManagerTools[Manager Tools<br>src/tools/manager_tools.py]:::core
+        ToolRegistry --> DockerCodeRunner[Docker Code Runner<br>src/tools/docker_code_runner.py]:::core
+        ToolRegistry --> WorkspaceTools[Workspace Tools<br>src/tools/workspace_tools.py]:::core
+        
+        DockerCodeRunner --> DockerExecutor[Docker Executor<br>src/tools/docker/docker_executor.py]:::execution
+        DockerExecutor --> DirectDockerRun[Direct Docker Run<br>src/tools/docker/direct_docker_run.py]:::execution
+        DirectDockerRun --> DockerAPI[Docker API]:::execution
+        DockerAPI --> Container[Isolated Container]:::execution
+    end
+    
+    %% Data Flow for Code Execution
+    CodeExtractor -.-> |Extract Code| WorkspaceManager
+    WorkspaceTools -.-> |Read/Write Files| WorkspaceManager
+    WorkspaceManager -.-> |Save Code| CodeDir
+    DockerCodeRunner -.-> |Run Code| DirectDockerRun
+    DirectDockerRun -.-> |Mount| CodeDir
+    DirectDockerRun -.-> |Mount| DataDir
+    DirectDockerRun -.-> |Mount| OutputDir
+    Container -.-> |Write Results| OutputDir
+    
+    %% Add appropriate classes
+    WebUI:::interface
+    CLI:::interface
+    AgentFactory:::core
+    ModelManager:::core
+    OllamaService:::execution
+    WorkspaceRoot:::storage
+    Container:::execution
+```
+
+## Dependencies and Requirements
+
+The following diagram illustrates how all dependencies and requirements for the repository are connected:
+
+```mermaid
+graph TD
+    classDef core fill:#f9f,stroke:#333,stroke-width:2px
+    classDef essential fill:#bbf,stroke:#333,stroke-width:1px
+    classDef optional fill:#bfb,stroke:#333,stroke-width:1px
+    
+    APP[LLM-LangGraph Application] --> Core[Core Dependencies]
+    APP --> UI[User Interfaces]
+    APP --> Storage[Storage Components]
+    APP --> Execution[Execution Environment]
+    
+    Core --> Python[Python >= 3.11]:::core
+    Core --> LangChain[LangChain Ecosystem]:::core
+    Core --> UV[UV Package Manager]:::core
+    
+    LangChain --> LangChainCore[langchain-core]:::core
+    LangChain --> LangChainCommunity[langchain-community]:::core
+    LangChain --> LangGraph[langgraph]:::core
+    
+    Core --> LLMInt[LLM Integration]:::core
+    LLMInt --> LangChainOllama[langchain-ollama]:::core
+    LLMInt --> OllamaPkg[ollama package]:::core
+    LLMInt --> OllamaService[Ollama Service]:::core
+    
+    UI --> WebUI[Web UI]:::essential
+    UI --> CommandLine[Command Line Interface]:::essential
+    
+    WebUI --> Streamlit[streamlit]:::essential
+    
+    CommandLine --> ArgumentParsing[argparse]:::essential
+    
+    Storage --> Config[Configuration Files]:::essential
+    Storage --> ConvoHistory[Conversation History]:::essential
+    Storage --> WorkspaceSystem[Workspace System]:::essential
+    
+    Config --> YAML[pyyaml]:::essential
+    Config --> EnvVars[python-dotenv]:::optional
+    
+    WorkspaceSystem --> Code[code/ Directory]:::essential
+    WorkspaceSystem --> Data[data/ Directory]:::essential
+    WorkspaceSystem --> Output[output/ Directory]:::essential
+    
+    Execution --> DockerExec[Docker Execution]:::essential
+    DockerExec --> DockerPkg[docker package]:::essential
+    DockerExec --> DockerService[Docker Service]:::essential
+    
+    DockerService --> Colima[Colima]:::optional
+    DockerService --> DockerDesktop[Docker Desktop]:::optional
+    DockerService --> OrbStack[OrbStack]:::optional
+    
+    Utilities[Utility Libraries] --> Tenacity[tenacity]:::optional
+    Utilities --> TypeExtensions[typing-extensions]:::optional
+    Utilities --> JSONPatch[jsonpatch]:::optional
+    
+    APP --> Utilities
+    
+    %% Legend
+    LegendCore[Core Dependencies]:::core
+    LegendEssential[Essential Components]:::essential
+    LegendOptional[Optional Components]:::optional
+```
+
+### Legend
+- **Core Dependencies**: Required for basic functionality
+- **Essential Components**: Required for full functionality
+- **Optional Components**: Enhances functionality but not strictly required
+
 ## Prerequisites
 
 - Ollama installed and running
-- Python >= 3.13
+- Python >= 3.11
 - uv >= 0.5.0
 - Docker >= 25.0.2 (Colima recommended for macOS users)
 - VS Code or another Python IDE (recommended)
@@ -128,28 +289,11 @@ The application also provides a command-line interface for interacting with the 
 
 ```bash
 python src/chat_cli.py [options] [QUESTION]
-```
 
-Available options:
+# Run in interactive mode
+python src/chat_cli.py --interactive
 
-* `--model MODEL` - Select which model to use for agents (default: llama3)
-* `--question QUESTION` - Ask a specific question and exit (alternatively, provide it as the last argument)
-* `--interactive` - Run in interactive mode for continuous conversation
-* `--agents AGENTS` - Comma-separated list of agent types to use (e.g. "Assistant,Manager,Coder")
-* `--max-rounds N` - Maximum number of discussion rounds before concluding (default: 3)
-* `--consensus` - Require agents to reach consensus before concluding
-* `--list-agent-types` - List all available agent types and exit
-
-Examples:
-
-```bash
-# List all available agent types
-python src/chat_cli.py --list-agent-types
-
-# Interactive chat with specific agents and model
-python src/chat_cli.py --interactive --model gemma3 --agents "Coder,Math Expert,Manager"
-
-# Ask a single question (using --question flag)
+# Ask a single question
 python src/chat_cli.py --question "How do transformer models work?"
 
 # Ask a single question (using positional argument - simpler syntax)
@@ -164,6 +308,16 @@ python src/chat_cli.py --consensus --max-rounds 5 "What are the ethical implicat
 # Limit to a single round of discussion (no back-and-forth between agents)
 python src/chat_cli.py --max-rounds 1 "What is quantum computing?"
 ```
+
+The CLI supports all the features available in the web UI, including:
+
+* Positional arguments for questions (no need for the `--question` flag)
+* Custom agent selection with `--agents` parameter
+* Maximum discussion rounds control with `--max-rounds`
+* Consensus mode with the `--consensus` flag
+* Interactive conversations with `--interactive`
+
+For detailed usage examples and all available options, see the [CHAT_CLI_USAGE.md](CHAT_CLI_USAGE.md) documentation.
 
 ### Convenience Scripts
 

@@ -122,14 +122,5 @@
       ]
     }
   ],
-  "installed_models": [
-    "wizard-vicuna-uncensored",
-    "phi4",
-    "qwen3",
-    "gemma3",
-    "devstral",
-    "mistral",
-    "codellama",
-    "llama3"
-  ]
+  "installed_models": []
 }
