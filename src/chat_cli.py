@@ -6,14 +6,13 @@ A command-line interface for interacting with multi-agent LLM conversations.
 This allows you to run the multi-agent system without the Streamlit UI.
 
 Usage:
-    python chat_cli.py [--model MODEL] [--agents AGENTS] [--interactive] [QUESTION]
-    python chat_cli.py [--model MODEL] [--agents AGENTS] --question QUESTION
+    python chat_cli.py [--model MODEL] [--agents AGENTS] [--max-rounds N] [--consensus] [--interactive] [QUESTION]
     
 Examples:
     python chat_cli.py --model llama3 --interactive
-    python chat_cli.py --model gemma3 --question "How do transformer models work?"
     python chat_cli.py "What is the square root of 144?"
     python chat_cli.py --agents "Math Expert,Coder" "Write a Python function to calculate prime numbers"
+    python chat_cli.py --agents "Assistant,Manager" --max-rounds 5 --consensus "Explain quantum computing"
 """
 
 import os
@@ -128,6 +127,10 @@ def main():
                       help="Comma-separated list of agent types to use (default: Assistant,Researcher,Manager)")
     parser.add_argument("--list-agent-types", action="store_true",
                       help="List all available agent types and exit")
+    parser.add_argument("--max-rounds", type=int, default=3,
+                      help="Maximum number of discussion rounds before concluding (default: 3)")
+    parser.add_argument("--consensus", action="store_true",
+                      help="Require agents to reach consensus before concluding")
     # Add positional argument for the question as an alternative to --question
     parser.add_argument("question_pos", nargs="?", type=str,
                       help="Question to ask (can be provided directly without --question)")
@@ -177,8 +180,17 @@ def main():
         
     # Create group chat
     print("\nSetting up group chat...")
-    group_chat = create_group_chat(agents)
+    group_chat = create_group_chat(
+        agents, 
+        require_consensus=args.consensus, 
+        max_rounds=args.max_rounds,
+        group_chat_name="CLI Chat"
+    )
     print(f"✓ Group chat created with {len(agents)} agents")
+    if args.consensus:
+        print(f"✓ Consensus mode enabled")
+    print(f"✓ Maximum {args.max_rounds} discussion rounds")
+    
     
     # Interactive mode
     if args.interactive:

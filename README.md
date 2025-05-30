@@ -136,6 +136,8 @@ Available options:
 * `--question QUESTION` - Ask a specific question and exit (alternatively, provide it as the last argument)
 * `--interactive` - Run in interactive mode for continuous conversation
 * `--agents AGENTS` - Comma-separated list of agent types to use (e.g. "Assistant,Manager,Coder")
+* `--max-rounds N` - Maximum number of discussion rounds before concluding (default: 3)
+* `--consensus` - Require agents to reach consensus before concluding
 * `--list-agent-types` - List all available agent types and exit
 
 Examples:
@@ -155,6 +157,12 @@ python src/chat_cli.py "How do transformer models work?"
 
 # Combined options with positional question
 python src/chat_cli.py --agents "Math Expert,Coder" --model llama3 "Write a Python function to calculate factorial"
+
+# Use consensus mode with 5 discussion rounds
+python src/chat_cli.py --consensus --max-rounds 5 "What are the ethical implications of AI?"
+
+# Limit to a single round of discussion (no back-and-forth between agents)
+python src/chat_cli.py --max-rounds 1 "What is quantum computing?"
 ```
 
 ### Convenience Scripts
