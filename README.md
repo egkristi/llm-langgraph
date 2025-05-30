@@ -8,6 +8,7 @@ A Streamlit application that leverages LangGraph to create multi-agent conversat
 ## Features
 
 - **Multiple Agent Types**: Create specialized agents (Assistant, Researcher, Coder, Math Expert, Critic, or Custom)
+- **Custom Model Integration**: Pull and configure custom Ollama models directly from the UI
 - **Consensus-Based Discussion**: Agents can engage in multi-round discussions until reaching consensus
 - **Group Chat Manager**: A designated agent evaluates when consensus has been reached
 - **Local LLM Integration**: Uses Ollama to run models completely locally
@@ -122,14 +123,18 @@ For easier startup and shutdown, you can use the provided scripts:
 ## Using the Application
 
 1. **Connect to Ollama**: First, ensure Ollama is running and click "Connect to Ollama" in the sidebar
-2. **Create Agents**: Configure and create agents with different specialties
-3. **Setup Group Chat**: Select multiple agents to participate in a group chat
+2. **Pull Custom Models** (Optional): Use the "Pull Custom Models" section in the sidebar to add new Ollama models
+   - Enter the model name as it appears in Ollama (e.g., `llama3:latest`, `wizardcoder:python`)
+   - Add optional display name, description, and tags for better organization
+   - The model will be pulled from Ollama and added to models.json for future use
+3. **Create Agents**: Configure and create agents with different specialties
+4. **Setup Group Chat**: Select multiple agents to participate in a group chat
    - **Enable Consensus Mode**: Check "Require Consensus" to have agents discuss until agreement
    - **Set Discussion Rounds**: Choose how many rounds of discussion to allow (1-99)
    - **Add a Critic or Manager**: For best results in consensus mode, include a Critic or create a Manager agent
-4. **Chat Interface**: Interact with your agents through the main chat interface
-5. **Access Saved Conversations**: Open the Group Chat Management section and go to the Conversations tab to browse, filter, and reload past conversations
-6. **Save Configuration**: Save your agent configurations for future use
+5. **Chat Interface**: Interact with your agents through the main chat interface
+6. **Access Saved Conversations**: Open the Group Chat Management section and go to the Conversations tab to browse, filter, and reload past conversations
+7. **Save Configuration**: Save your agent configurations for future use
 
 ## Agent Types
 

@@ -537,6 +537,8 @@ with st.sidebar:
                     st.exception(e)
                     st.write("Try running 'ollama serve' in a terminal to start Ollama")
 
+    # Custom Model Installation section was moved to the Model Management expander
+
     # Debug mode toggle
     st.subheader("Advanced Settings")
     debug_mode = st.checkbox("Enable Debug Mode", value=st.session_state.debug_mode, 
@@ -634,6 +636,40 @@ with st.sidebar:
                     st.write(f"- {model}")
             else:
                 st.info("No models installed. Please connect to Ollama first.")
+            
+            # Add Pull Custom Model section
+            st.divider()
+            st.write("**Pull Custom Model:**")
+            custom_model = st.text_input("Model Name", placeholder="e.g., llama3:latest, phi3:instruct")
+            description = st.text_area("Description (optional)", placeholder="Describe the model's capabilities", height=100)
+            
+            # Pull model button
+            if st.button("Pull Model"):
+                if not custom_model:
+                    st.error("Please enter a model name")
+                else:
+                    with st.spinner(f"Pulling model {custom_model}..."):
+                        try:
+                            # Add the custom model with simplified metadata
+                            success = st.session_state.model_manager.add_custom_model(
+                                model_name=custom_model,
+                                display_name=None,  # Use model name as display name
+                                description=description if description else None,
+                                tags=["custom"]  # Always use custom tag
+                            )
+                            
+                            if success:
+                                # Refresh models
+                                all_models = st.session_state.model_manager.get_all_models()
+                                st.session_state.all_models = all_models
+                                st.success(f"Successfully pulled model {custom_model}")
+                                st.rerun()  # Refresh the UI to show the new model
+                            else:
+                                st.error(f"Failed to pull model {custom_model}")
+                        except Exception as e:
+                            st.error(f"Error pulling model: {str(e)}")
+                            if st.session_state.debug_mode:
+                                st.exception(e)
             
             st.divider()
             st.write("**Recommended Models:**")

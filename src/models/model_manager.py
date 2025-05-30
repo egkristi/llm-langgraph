@@ -165,6 +165,63 @@ class ModelManager:
         except Exception as e:
             print(f"Error pulling model {model_name}: {str(e)}")
             return False
+            
+    def add_custom_model(self, model_name: str, display_name: str = None, 
+                        description: str = None, tags: List[str] = None) -> bool:
+        """Add a custom model to models.json with metadata.
+        
+        Args:
+            model_name: The model name used for Ollama API calls
+            display_name: Human-readable name for the UI (defaults to model_name if None)
+            description: Description of the model (defaults to "Custom Ollama model" if None)
+            tags: List of tags for the model (defaults to ["custom"] if None)
+            
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        try:
+            # Pull the model first to ensure it exists
+            if not self.pull_model(model_name):
+                return False
+                
+            # Prepare model metadata
+            display_name = display_name or model_name
+            description = description or f"Custom Ollama model: {model_name}"
+            tags = tags or ["custom"]
+            
+            # Create model metadata entry
+            model_entry = {
+                "name": model_name,
+                "display_name": display_name,
+                "description": description,
+                "tags": tags
+            }
+            
+            # Load current models data
+            models_data = self.load_models_file()
+            
+            # Check if model already exists in recommended_models
+            existing_model = next((m for m in models_data.get("recommended_models", []) 
+                                 if m.get("name") == model_name), None)
+            
+            if existing_model:
+                # Update existing model entry
+                existing_model.update(model_entry)
+            else:
+                # Add new model entry
+                models_data.setdefault("recommended_models", []).append(model_entry)
+            
+            # Ensure model is in installed_models list
+            if model_name not in models_data.setdefault("installed_models", []):
+                models_data["installed_models"].append(model_name)
+                
+            # Save updated models data
+            self.save_models_file(models_data)
+            return True
+            
+        except Exception as e:
+            print(f"Error adding custom model {model_name}: {str(e)}")
+            return False
 
 def get_model(model_name: str, host: str = "http://localhost:11434") -> LLM:
     """Get or create an LLM instance for the specified model."""

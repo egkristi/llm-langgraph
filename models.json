@@ -104,9 +104,18 @@
         "code",
         "programming"
       ]
+    },
+    {
+      "name": "phi4",
+      "display_name": "phi4",
+      "description": "Phi-4 is a 14B parameter, state-of-the-art open model from Microsoft.",
+      "tags": [
+        "custom"
+      ]
     }
   ],
   "installed_models": [
+    "phi4",
     "qwen3",
     "gemma3",
     "devstral",
