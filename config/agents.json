@@ -13,7 +13,13 @@
   },
   "forsker": {
     "name": "forsker",
-    "agent_type": "Assistant",
+    "agent_type": "Researcher",
+    "model": "wizard-vicuna-uncensored",
+    "custom_prompt": null
+  },
+  "forsker2": {
+    "name": "forsker2",
+    "agent_type": "Researcher",
     "model": "llama3",
     "custom_prompt": null
   },

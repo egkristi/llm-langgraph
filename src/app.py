@@ -15,7 +15,8 @@ from tools.docker_code_runner import docker_available
 from utils.config import (
     load_config, save_config, 
     load_agents, save_agents,
-    load_groupchats, save_groupchats
+    load_groupchats, save_groupchats,
+    load_agent_types, save_agent_types
 )
 from utils.conversation_manager import (
     save_conversation, load_conversation,
@@ -85,6 +86,8 @@ if "all_saved_agents" not in st.session_state:
     st.session_state.all_saved_agents = {}
 if "all_saved_group_chats" not in st.session_state:
     st.session_state.all_saved_group_chats = {}
+if "agent_types" not in st.session_state:
+    st.session_state.agent_types = load_agent_types()
 
 # Function to directly create and activate a group chat
 def activate_specific_group_chat(chat_name, chat_config):
@@ -723,7 +726,108 @@ with st.sidebar:
             st.info("Please connect to Ollama first to manage models.")
             if st.button("Connect"):
                 st.rerun()
-
+    
+    # Agent Types Management section
+    with st.expander("Agent Types Management", expanded=False):
+        # Load agent types if not already loaded
+        if "agent_types" not in st.session_state:
+            st.session_state.agent_types = load_agent_types()
+        
+        # Create tabs for different operations
+        agent_types_tab1, agent_types_tab2 = st.tabs(["View/Edit Agent Types", "Add New Agent Type"])
+        
+        with agent_types_tab1:
+            # Display existing agent types for editing
+            st.subheader("Edit Existing Agent Types")
+            
+            # Extract agent types from the configuration
+            agent_types_dict = st.session_state.agent_types.get("agent_types", {})
+            agent_type_names = list(agent_types_dict.keys())
+            
+            if agent_type_names:
+                # Select an agent type to edit
+                selected_agent_type = st.selectbox("Select Agent Type to Edit", agent_type_names)
+                
+                # Get the selected agent type configuration
+                agent_type_config = agent_types_dict.get(selected_agent_type, {})
+                
+                # Display and allow editing of the agent type fields
+                display_name = st.text_input("Display Name", value=agent_type_config.get("display_name", ""))
+                description = st.text_area("Description", value=agent_type_config.get("description", ""))
+                system_prompt = st.text_area("System Prompt", value=agent_type_config.get("system_prompt", ""), height=300)
+                
+                # Save changes button
+                if st.button("Save Changes"):
+                    # Update the agent type configuration
+                    agent_types_dict[selected_agent_type] = {
+                        "display_name": display_name,
+                        "description": description,
+                        "system_prompt": system_prompt
+                    }
+                    
+                    # Save the updated agent types configuration
+                    st.session_state.agent_types["agent_types"] = agent_types_dict
+                    save_agent_types(st.session_state.agent_types)
+                    
+                    st.success(f"Agent type '{selected_agent_type}' has been updated successfully!")
+                    time.sleep(1)  # Give the user time to see the success message
+                    st.rerun()  # Refresh the UI
+                
+                # Delete button with confirmation
+                if st.button("Delete Agent Type", type="secondary"):
+                    # Ask for confirmation
+                    st.warning(f"Are you sure you want to delete the agent type '{selected_agent_type}'? This action cannot be undone.")
+                    confirm_delete = st.button(f"Yes, Delete '{selected_agent_type}'", key="confirm_delete")
+                    if confirm_delete:
+                        # Delete the agent type
+                        del agent_types_dict[selected_agent_type]
+                        
+                        # Save the updated agent types configuration
+                        st.session_state.agent_types["agent_types"] = agent_types_dict
+                        save_agent_types(st.session_state.agent_types)
+                        
+                        st.success(f"Agent type '{selected_agent_type}' has been deleted successfully!")
+                        time.sleep(1)  # Give the user time to see the success message
+                        st.rerun()  # Refresh the UI
+            else:
+                st.info("No agent types found. Add a new agent type in the 'Add New Agent Type' tab.")
+        
+        with agent_types_tab2:
+            # Form for adding a new agent type
+            st.subheader("Add New Agent Type")
+            
+            # Input fields for the new agent type
+            new_agent_type_id = st.text_input("Agent Type ID", placeholder="e.g., DataAnalyst, Translator, Tutor")
+            new_display_name = st.text_input("Display Name", placeholder="e.g., Data Analyst, Translator, Tutor")
+            new_description = st.text_area("Description", placeholder="Describe the agent type's role and capabilities")
+            new_system_prompt = st.text_area("System Prompt", placeholder="The system prompt for this agent type", height=300)
+            
+            # Add button
+            if st.button("Add Agent Type"):
+                # Validate inputs
+                if not new_agent_type_id:
+                    st.error("Agent Type ID is required.")
+                elif not new_display_name:
+                    st.error("Display Name is required.")
+                elif not new_system_prompt:
+                    st.error("System Prompt is required.")
+                elif new_agent_type_id in agent_types_dict:
+                    st.error(f"Agent Type '{new_agent_type_id}' already exists. Please use a different ID.")
+                else:
+                    # Add the new agent type
+                    agent_types_dict[new_agent_type_id] = {
+                        "display_name": new_display_name,
+                        "description": new_description,
+                        "system_prompt": new_system_prompt
+                    }
+                    
+                    # Save the updated agent types configuration
+                    st.session_state.agent_types["agent_types"] = agent_types_dict
+                    save_agent_types(st.session_state.agent_types)
+                    
+                    st.success(f"New agent type '{new_agent_type_id}' has been added successfully!")
+                    time.sleep(1)  # Give the user time to see the success message
+                    st.rerun()  # Refresh the UI
 
 
 # Make Agent Configuration collapsible and collapsed by default
@@ -733,8 +837,17 @@ with st.expander("Agent Configuration", expanded=False):
     with col1:
         new_agent_name = st.text_input("Agent Name")
     with col2:
-        agent_types = ["Assistant", "Researcher", "Coder", "Math Expert", "Critic", "Manager", "Code Runner", "Custom"]
-        new_agent_type = st.selectbox("Agent Type", agent_types)
+        # Get agent types dynamically from configuration
+        if "agent_types" not in st.session_state:
+            st.session_state.agent_types = load_agent_types()
+        agent_types_dict = st.session_state.agent_types.get("agent_types", {})
+        agent_type_options = list(agent_types_dict.keys())
+        
+        # Make sure 'Custom' is always an option
+        if "Custom" not in agent_type_options:
+            agent_type_options.append("Custom")
+            
+        new_agent_type = st.selectbox("Agent Type", agent_type_options)
     
     # Model selection for agent
     if "available_models" in st.session_state:
@@ -816,9 +929,24 @@ with st.expander("Agent Configuration", expanded=False):
             st.divider()
             st.subheader(f"Edit Agent: {agent_name}")
             
-            # Agent type selection
-            agent_types = ["Assistant", "Researcher", "Coder", "Math Expert", "Critic", "Manager", "Code Runner", "Custom"]
-            new_agent_type = st.selectbox("Agent Type", agent_types, index=agent_types.index(agent.agent_type) if agent.agent_type in agent_types else 0, key="edit_agent_type")
+            # Display and edit agent fields
+            # Get agent types dynamically from configuration
+            if "agent_types" not in st.session_state:
+                st.session_state.agent_types = load_agent_types()
+            agent_types_dict = st.session_state.agent_types.get("agent_types", {})
+            agent_type_options = list(agent_types_dict.keys())
+            
+            # Make sure 'Custom' is always an option
+            if "Custom" not in agent_type_options:
+                agent_type_options.append("Custom")
+                
+            # Find the index of the current agent type
+            try:
+                type_index = agent_type_options.index(agent.agent_type)
+            except ValueError:
+                type_index = 0  # Default to first option if not found
+                
+            new_agent_type = st.selectbox("Agent Type", agent_type_options, index=type_index, key="edit_agent_type")
             
             # Model selection
             if "available_models" in st.session_state:

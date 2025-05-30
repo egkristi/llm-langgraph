@@ -8,6 +8,7 @@ CONFIG_DIR = Path("config")
 CONFIG_FILE = CONFIG_DIR / "config.json"
 AGENTS_FILE = CONFIG_DIR / "agents.json"
 GROUPCHATS_FILE = CONFIG_DIR / "groupchats.json"
+AGENT_TYPES_FILE = CONFIG_DIR / "agent_types.json"
 
 # Create config directory if it doesn't exist
 CONFIG_DIR.mkdir(exist_ok=True)
@@ -151,3 +152,43 @@ def update_config(updates: Dict[str, Any], config_path: Optional[Path] = None):
     
     update_dict(current_config, updates)
     save_config(current_config, config_path)
+
+
+def load_agent_types(agent_types_path: Optional[Path] = None) -> Dict[str, Any]:
+    """
+    Load agent types from a JSON file.
+    
+    Args:
+        agent_types_path: Path to the agent types file, uses default if not specified
+        
+    Returns:
+        Dictionary containing the agent types
+    """
+    agent_types_path = agent_types_path or AGENT_TYPES_FILE
+    
+    if not agent_types_path.exists():
+        return {"agent_types": {}}
+        
+    try:
+        with open(agent_types_path, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading agent types: {str(e)}")
+        return {"agent_types": {}}
+
+
+def save_agent_types(agent_types: Dict[str, Any], agent_types_path: Optional[Path] = None):
+    """
+    Save agent types to a JSON file.
+    
+    Args:
+        agent_types: Agent types dictionary to save
+        agent_types_path: Path to the agent types file, uses default if not specified
+    """
+    agent_types_path = agent_types_path or AGENT_TYPES_FILE
+    
+    try:
+        with open(agent_types_path, "w") as f:
+            json.dump(agent_types, f, indent=2)
+    except Exception as e:
+        print(f"Error saving agent types: {str(e)}")
