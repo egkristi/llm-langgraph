@@ -793,8 +793,12 @@ with st.expander("Agent Configuration", expanded=False):
                     del st.session_state.agents[agent_name]
                     st.rerun()
 
-# Make Group Chat Management collapsible and collapsed by default
-with st.expander("Group Chat Management", expanded=False):
+# Initialize expander state if it doesn't exist
+if "group_chat_expander_open" not in st.session_state:
+    st.session_state.group_chat_expander_open = False
+    
+# Make Group Chat Management collapsible and track its state
+with st.expander("Group Chat Management", expanded=st.session_state.group_chat_expander_open):
     # Create New Group Chat tab and Saved Group Chat tab
     tab1, tab2, tab3, tab4 = st.tabs(["Create New Group Chat", "Use Saved Group Chat", "Manage Configurations", "Conversations"])
 
@@ -939,8 +943,12 @@ with tab2:
         saved_chat = st.radio(
             "Available Group Chat Configurations",
             options=saved_chat_options,
-            format_func=format_chat_name
+            format_func=format_chat_name,
+            key="saved_chat_selector" # Use a consistent key for the radio button
         )
+        
+        # Keep the expander open when making a selection
+        st.session_state.group_chat_expander_open = True
         
         # Show configuration details
         if saved_chat:
@@ -1025,6 +1033,8 @@ with tab2:
                     st.error("Cannot create missing agents: Ollama is not connected or no models are available")
             else:
                 if st.button("Activate This Group Chat", type="primary"):
+                    # Keep the expander open during activation
+                    st.session_state.group_chat_expander_open = True
                     with st.spinner("Loading group chat..."):
                         # First, update the saved group chats collection if needed
                         if saved_chat not in st.session_state.saved_group_chats:
