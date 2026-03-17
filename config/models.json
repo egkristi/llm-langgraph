@@ -122,7 +122,5 @@
       ]
     }
   ],
-  "installed_models": [
-    "llama3"
-  ]
+  "installed_models": []
 }
