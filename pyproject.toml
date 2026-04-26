@@ -35,8 +35,8 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/yourusername/llm-langgraph"
-repository = "https://github.com/yourusername/llm-langgraph"
+homepage = "https://github.com/egkristi/llm-langgraph"
+repository = "https://github.com/egkristi/llm-langgraph"
 
 [project.scripts]
 lang-chat = "src.chat_cli:main"

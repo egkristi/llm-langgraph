@@ -2,10 +2,13 @@ import streamlit as st
 import ollama
 from pathlib import Path
 import json
+import logging
 import time
 import os
 import subprocess
 from typing import Dict, List, Optional, Any
+
+logger = logging.getLogger(__name__)
 
 from agents.agent_factory import create_agent
 from models.model_manager import ModelManager
@@ -56,7 +59,7 @@ def _save_current_configuration():
         
         return True
     except Exception as e:
-        print(f"Error auto-saving configuration: {str(e)}")
+        logger.error(f"auto-saving configuration: {str(e)}")
         return False
 
 # Initialize session state variables
@@ -97,10 +100,10 @@ def activate_specific_group_chat(chat_name, chat_config):
         missing_agents = [name for name in chat_config["agent_names"] if name not in st.session_state.agents]
         
         # Print debug information
-        print(f"Activating group chat: {chat_name}")
-        print(f"Chat config: {chat_config}")
-        print(f"Missing agents: {missing_agents}")
-        print(f"Available agents: {list(st.session_state.agents.keys())}")
+        logger.debug(f"Activating group chat: {chat_name}")
+        logger.debug(f"Chat config: {chat_config}")
+        logger.debug(f"Missing agents: {missing_agents}")
+        logger.debug(f"Available agents: {list(st.session_state.agents.keys())}")
         
         # Only activate if all agents are available
         if not missing_agents:
@@ -113,24 +116,19 @@ def activate_specific_group_chat(chat_name, chat_config):
                 group_chat_name=chat_name
             )
             st.session_state.active_group_chat = chat_name
-            print(f"Successfully activated group chat: {chat_name}")
+            logger.debug(f"Successfully activated group chat: {chat_name}")
             return True
         else:
-            print(f"Cannot activate group chat: missing agents {missing_agents}")
+            logger.debug(f"Cannot activate group chat: missing agents {missing_agents}")
             return False
     except Exception as e:
-        print(f"Error activating group chat {chat_name}: {str(e)}")
+        logger.error(f"activating group chat {chat_name}: {str(e)}")
         return False
 
 # Auto-load saved configurations from all JSON files
 try:
     # Load main config
     config = st.session_state.config
-    
-    # Debug: Print the content of the config file
-    print("\n\nDEBUG: Config file contents:")
-    print(json.dumps(config, indent=2))
-    print("\n")
     
     # Set debug mode and default model
     st.session_state.debug_mode = config.get("debug_mode", False)
@@ -156,11 +154,11 @@ try:
         if name not in st.session_state.agents:
             try:
                 if st.session_state.debug_mode:
-                    print(f"Creating agent {name} with data: {agent_data}")
+                    logger.debug(f"Creating agent {name} with data: {agent_data}")
                 
                 # Ensure we have the required fields
                 if "agent_type" not in agent_data or "model" not in agent_data:
-                    print(f"Warning: Missing required fields for agent {name}. Agent data: {agent_data}")
+                    logger.debug(f"Warning: Missing required fields for agent {name}. Agent data: {agent_data}")
                     continue
                     
                 agent = create_agent(
@@ -171,9 +169,9 @@ try:
                 )
                 st.session_state.agents[name] = agent
                 if st.session_state.debug_mode:
-                    print(f"Successfully created agent {name}")
+                    logger.debug(f"Successfully created agent {name}")
             except Exception as agent_err:
-                print(f"Error creating agent {name}: {str(agent_err)}")
+                logger.error(f"creating agent {name}: {str(agent_err)}")
     
     # Load saved group chats from both sources
     
@@ -191,28 +189,13 @@ try:
                 st.session_state.saved_group_chats[name] = chat_data.copy()
                 
                 # Debug
-                print(f"Loaded group chat from config.json: {name}")
+                logger.debug(f"Loaded group chat from config.json: {name}")
                 
             # Check for active flag
             if chat_data.get("active", False):
                 # Set this as the active group chat name
                 config["active_group_chat"] = name
-                print(f"Found active group chat in config.json: {name}")
-    
-    # DIRECT FIX: Handle 'My Group Chat' specifically if it exists
-    if "saved_group_chats" in config and "My Group Chat" in config["saved_group_chats"]:
-        chat_name = "My Group Chat"
-        config["active_group_chat"] = chat_name
-        
-        # Make sure it's in both collections
-        if chat_name not in st.session_state.saved_group_chats and chat_name in config["saved_group_chats"]:
-            st.session_state.saved_group_chats[chat_name] = config["saved_group_chats"][chat_name].copy()
-            
-        if chat_name not in st.session_state.all_saved_group_chats and chat_name in config["saved_group_chats"]:
-            st.session_state.all_saved_group_chats[chat_name] = config["saved_group_chats"][chat_name].copy()
-            
-        print(f"Direct fix: Set 'My Group Chat' as the active group chat")
-    
+                logger.debug(f"Found active group chat in config.json: {name}")
     
     # Update current group chats (these are the ones shown in the UI)
     st.session_state.saved_group_chats = st.session_state.all_saved_group_chats.copy()
@@ -224,8 +207,8 @@ try:
         
         # Print debug info
         if st.session_state.debug_mode:
-            print(f"Available agents: {list(st.session_state.agents.keys())}")
-            print(f"Available group chats: {list(st.session_state.saved_group_chats.keys())}")
+            logger.debug(f"Available agents: {list(st.session_state.agents.keys())}")
+            logger.debug(f"Available group chats: {list(st.session_state.saved_group_chats.keys())}")
         
         # First priority: check main config for active group chat - direct reference
         active_chat_name = config.get("active_group_chat")
@@ -267,24 +250,18 @@ try:
                 st.session_state.saved_group_chats[active_chat_name] = chat_config.copy()
                 
             if st.session_state.debug_mode:
-                print(f"Attempting to activate chat: {active_chat_name}")
-                print(f"Chat config: {chat_config}")
+                logger.debug(f"Attempting to activate chat: {active_chat_name}")
+                logger.debug(f"Chat config: {chat_config}")
                 
             if not chat_config:
-                print(f"Warning: Could not find configuration for group chat '{active_chat_name}'")
-                # Skip the rest of this block
-                continue_activation = False
+                logger.debug(f"Warning: Could not find configuration for group chat '{active_chat_name}'")
             else:
-                continue_activation = True
-            
-            # Only proceed if we have a valid chat config
-            if continue_activation:
                 # Check if all required agents exist
                 missing_agents = [name for name in chat_config["agent_names"] if name not in st.session_state.agents]
                 
                 if st.session_state.debug_mode:
-                    print(f"Missing agents for chat '{active_chat_name}': {missing_agents}")
-                    print(f"Available agents: {list(st.session_state.agents.keys())}")
+                    logger.debug(f"Missing agents for chat '{active_chat_name}': {missing_agents}")
+                    logger.debug(f"Available agents: {list(st.session_state.agents.keys())}")
                 
                 # Only activate if all agents are available
                 if not missing_agents:
@@ -298,16 +275,16 @@ try:
                             group_chat_name=active_chat_name
                         )
                         st.session_state.active_group_chat = active_chat_name
-                        print(f"Auto-activated group chat: {active_chat_name}")
+                        logger.debug(f"Auto-activated group chat: {active_chat_name}")
                     except Exception as gc_err:
-                        print(f"Error auto-activating group chat {active_chat_name}: {str(gc_err)}")
+                        logger.error(f"auto-activating group chat {active_chat_name}: {str(gc_err)}")
     else:
-        print(f"Using existing group chat from session state: {st.session_state.active_group_chat}")
+        logger.debug(f"Using existing group chat from session state: {st.session_state.active_group_chat}")
 
     # Directly try to activate the group chat from config.json
     if st.session_state.group_chat is None and "saved_group_chats" in config:
         # List all available group chats
-        print(f"Available group chats in config.json: {list(config.get('saved_group_chats', {}).keys())}")
+        logger.debug(f"Available group chats in config.json: {list(config.get('saved_group_chats', {}).keys())}")
         
         # Find the active group chat or the first one
         chat_name = None
@@ -318,36 +295,27 @@ try:
                 chat_name = name
                 break
         
-        # If no active chat found, try "My Group Chat" specifically
-        if not chat_name and "My Group Chat" in config.get("saved_group_chats", {}):
-            chat_name = "My Group Chat"
-        
-        # If still no chat found, use the first one
+        # If no active chat found, use the first one
         if not chat_name and config.get("saved_group_chats", {}):
             chat_name = list(config.get("saved_group_chats", {}).keys())[0]
         
         if not chat_name:
-            print("No group chats found in config.json")
-            # Skip the rest of the activation attempt
-            continue_with_activation = False
+            logger.debug("No group chats found in config.json")
         else:
-            continue_with_activation = True
-            
-        if continue_with_activation:
-            print(f"Selected group chat to activate: {chat_name}")
+            logger.debug(f"Selected group chat to activate: {chat_name}")
             chat_config = config["saved_group_chats"][chat_name]
-            print(f"\n\nDIRECT ACTIVATION ATTEMPT for '{chat_name}'")
+            logger.debug(f"Activation attempt for '{chat_name}'")
             
             # Ensure agents in the group chat exist
             if "agents" in config:
                 # Extract agent names from group chat
                 chat_agents = chat_config.get("agent_names", [])
-                print(f"Chat agent names: {chat_agents}")
+                logger.debug(f"Chat agent names: {chat_agents}")
                 
                 # Check each agent and create if missing
                 for agent_name in chat_agents:
                     if agent_name not in st.session_state.agents and agent_name in config["agents"]:
-                        print(f"Creating missing agent {agent_name} from config.json")
+                        logger.debug(f"Creating missing agent {agent_name} from config.json")
                         agent_data = config["agents"][agent_name]
                         try:
                             agent = create_agent(
@@ -357,9 +325,9 @@ try:
                                 custom_prompt=agent_data.get("custom_prompt")
                             )
                             st.session_state.agents[agent_name] = agent
-                            print(f"Successfully created agent {agent_name} for the group chat")
+                            logger.debug(f"Successfully created agent {agent_name} for the group chat")
                         except Exception as e:
-                            print(f"Failed to create agent {agent_name}: {str(e)}")
+                            logger.debug(f"Failed to create agent {agent_name}: {str(e)}")
         
             # Try to activate the group chat directly
             success = activate_specific_group_chat(chat_name, chat_config)
@@ -373,14 +341,14 @@ try:
                 
                 # Save the updated configuration
                 _save_current_configuration()
-                print("Successfully activated and saved the group chat configuration.")
+                logger.debug("Successfully activated and saved the group chat configuration.")
                 
                 # Force a rerun to ensure the UI updates
                 st.rerun()
 
     # If no group chat is activated, try to create a default one with available agents
     if st.session_state.group_chat is None and st.session_state.agents:
-        print("\n\nCreating a default group chat with available agents...")
+        logger.debug("\n\nCreating a default group chat with available agents...")
         available_agents = list(st.session_state.agents.keys())
         if len(available_agents) > 0:
             # Create a new group chat configuration
@@ -400,11 +368,11 @@ try:
             # Activate the group chat
             success = activate_specific_group_chat(default_chat_name, default_chat_config)
             if success:
-                print(f"Successfully created and activated default group chat with agents: {available_agents}")
+                logger.debug(f"Successfully created and activated default group chat with agents: {available_agents}")
                 _save_current_configuration()
 
 except Exception as e:
-    print(f"Error auto-loading configuration: {str(e)}")
+    logger.error(f"auto-loading configuration: {str(e)}")
     if st.session_state.debug_mode:
         import traceback
         traceback.print_exc()
@@ -421,7 +389,7 @@ def connect_to_ollama(host="http://localhost:11434"):
         models = ollama.list()
         # Inspect the response for debugging if needed
         if st.session_state.debug_mode:
-            print(f"Ollama response: {models}")
+            logger.debug(f"Ollama response: {models}")
             
         # Extract model names from Ollama response
         extracted_models = []
@@ -488,7 +456,7 @@ def connect_to_ollama(host="http://localhost:11434"):
                             return True, f"Connected to Ollama. Found {len(extracted_models)} models."
             except Exception as e:
                 if st.session_state.debug_mode:
-                    print(f"Error in alternative parsing: {str(e)}")
+                    logger.error(f"in alternative parsing: {str(e)}")
                 # Continue to the next fallback method
             
             return False, "Could not find any models in the Ollama response."
@@ -1120,21 +1088,21 @@ elif st.session_state.active_gc_tab == 0:  # Tab 1: Create New Group Chat
                             selected_agents = {name: st.session_state.agents[name] for name in group_chat_agents}
                             
                             # Log for debugging
-                            print(f"Creating group chat with {len(selected_agents)} agents: {', '.join(selected_agents.keys())}")
+                            logger.debug(f"Creating group chat with {len(selected_agents)} agents: {', '.join(selected_agents.keys())}")
                             
                             # Create the group chat
                             group_chat = create_group_chat(
                                 selected_agents,
                                 require_consensus=require_consensus,
                                 max_rounds=max_rounds,
-                                group_chat_name=new_chat_name
+                                group_chat_name=group_chat_name
                             )
                             
                             # Set it in session state
                             st.session_state.group_chat = group_chat
                             
                             # Log for debugging
-                            print(f"Group chat created: {type(group_chat).__name__}, ID: {id(group_chat)}")
+                            logger.debug(f"Group chat created: {type(group_chat).__name__}, ID: {id(group_chat)}")
                             
                             # Verify group chat was created successfully
                             if st.session_state.group_chat is not None:
@@ -1262,7 +1230,7 @@ elif st.session_state.active_gc_tab == 1:  # Tab 2: Use Saved Group Chat
                                     created_agents.append(agent_name)
                                 except Exception as e:
                                     failed_agents.append(agent_name)
-                                    print(f"Error creating agent {agent_name}: {str(e)}")
+                                    logger.error(f"creating agent {agent_name}: {str(e)}")
                             
                             # Report results
                             if created_agents:
@@ -1784,8 +1752,8 @@ if user_input and st.session_state.group_chat:
             # Messages have already been displayed in real-time by the callback
             # No need to display them again, but we'll log completion for debugging
             if st.session_state.debug_mode:
-                print(f"Conversation complete. {len(st.session_state.conversation_state['messages'])} messages processed.")
-                print(f"Messages were displayed in real-time via the callback function.")
+                logger.debug(f"Conversation complete. {len(st.session_state.conversation_state['messages'])} messages processed.")
+                logger.debug(f"Messages were displayed in real-time via the callback function.")
             
             # Reset conversation state for next interaction
             st.session_state.conversation_state = {
@@ -1818,7 +1786,7 @@ if user_input and st.session_state.group_chat:
                 )
                 
                 if st.session_state.debug_mode and file_path:
-                    print(f"Saved conversation to {file_path}")
+                    logger.debug(f"Saved conversation to {file_path}")
                 
         except Exception as e:
             st.error(f"Error processing message: {str(e)}")

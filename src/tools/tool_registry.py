@@ -20,9 +20,37 @@ def search_tool(query: str) -> str:
 
 @tool
 def calculator_tool(expression: str) -> str:
-    """Evaluate a mathematical expression."""
+    """Evaluate a mathematical expression. Supports basic arithmetic (+, -, *, /, **, %)."""
+    import ast
+    import operator
+
+    allowed_operators = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Pow: operator.pow,
+        ast.Mod: operator.mod,
+        ast.USub: operator.neg,
+    }
+
+    def _eval_node(node):
+        if isinstance(node, ast.Expression):
+            return _eval_node(node.body)
+        elif isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return node.value
+        elif isinstance(node, ast.BinOp) and type(node.op) in allowed_operators:
+            left = _eval_node(node.left)
+            right = _eval_node(node.right)
+            return allowed_operators[type(node.op)](left, right)
+        elif isinstance(node, ast.UnaryOp) and type(node.op) in allowed_operators:
+            return allowed_operators[type(node.op)](_eval_node(node.operand))
+        else:
+            raise ValueError(f"Unsupported expression: {ast.dump(node)}")
+
     try:
-        result = eval(expression)
+        tree = ast.parse(expression, mode="eval")
+        result = _eval_node(tree)
         return f"Result: {result}"
     except Exception as e:
         return f"Error evaluating expression: {str(e)}"

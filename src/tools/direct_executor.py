@@ -5,6 +5,7 @@ This ensures code is executed in Docker containers directly.
 
 import os
 import subprocess
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -22,7 +23,8 @@ def direct_execute_code(file_name: str, group_chat_name: str, language: str = "p
         Execution results
     """
     # Create a container tracking file for debugging
-    with open("/tmp/docker_containers.log", "a") as f:
+    log_path = Path(tempfile.gettempdir()) / "docker_containers.log"
+    with open(log_path, "a") as f:
         f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Executing {file_name} for {group_chat_name} in {language}\n")
     print(f"DIRECT EXECUTOR: Executing {file_name} for {group_chat_name} in {language}")
     
@@ -117,49 +119,38 @@ def direct_execute_code(file_name: str, group_chat_name: str, language: str = "p
                         exit $EXIT_CODE"
     ]
     
-    # Create command to run and capture output
-    cmd_str = ' '.join(docker_cmd) + f" > {output_path} 2>&1"
-    
-    print(f"DIRECT EXECUTOR: Running command: {cmd_str}")
+    # Run the docker command and capture output
+    print(f"DIRECT EXECUTOR: Running docker command for {file_name}")
     
     try:
-        # Run the docker command with shell=True to handle output redirection
+        # Run the docker command without shell=True for security
         start_time = time.time()
         try:
-            # Execute the command directly with shell=True
             process = subprocess.run(
-                cmd_str, 
-                shell=True, 
+                docker_cmd,
+                capture_output=True,
                 text=True,
-                timeout=30  # Add timeout to prevent hanging
+                timeout=30
             )
             execution_time = time.time() - start_time
             
+            # Write captured output to the output file
+            combined_output = process.stdout + process.stderr
+            with open(output_path, 'w') as f:
+                f.write(combined_output)
+            
             # Check if Docker command was successful
             if process.returncode == 0:
-                # Read the output file
-                if output_path.exists():
-                    with open(output_path, 'r') as f:
-                        output = f.read()
-                else:
-                    output = "Execution produced no output file"
-                
+                output = combined_output
                 print(f"DIRECT EXECUTOR: Execution successful in {execution_time:.2f}s")
                 success = True
             else:
-                # Read the error output file
-                if output_path.exists():
-                    with open(output_path, 'r') as f:
-                        output = f.read()
-                else:
-                    output = "Execution failed but produced no output file"
-                    
+                output = combined_output if combined_output else "Execution failed but produced no output"
                 print(f"DIRECT EXECUTOR: Execution failed with code {process.returncode} in {execution_time:.2f}s")
-                print(f"DIRECT EXECUTOR: Error: {output[:500]}...")
                 success = False
                 
                 # Log the full error details to a file for debugging
-                error_log_path = Path("/tmp/docker_execution_errors.log")
+                error_log_path = Path(tempfile.gettempdir()) / "docker_execution_errors.log"
                 with open(error_log_path, "a") as f:
                     f.write(f"\n--- ERROR LOG {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n")
                     f.write(f"Command: {cmd_str}\n")

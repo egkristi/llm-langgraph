@@ -1,14 +1,21 @@
 from typing import Dict, List, Any, Optional, Tuple, Callable
 from langchain_core.messages import HumanMessage, AIMessage
+import os
 import random
 import re
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 # Import code extraction utilities
 from utils.message_processor import process_agent_message
 
 # Import direct executor for code execution
 from tools.direct_executor import direct_execute_code
+
+# Import workspace manager
+from utils.workspace_manager import get_workspace_path
 
 class GroupChat:
     """Implements a group chat with consensus and chat manager functionality."""
@@ -194,16 +201,6 @@ class GroupChat:
                                 continue
                                 
                             print(f"DIRECT DOCKER EXECUTION: Will execute {file_name} ({language}) in Docker")
-                            
-                            # Use the new direct Docker execution script for more reliable execution
-                            import subprocess
-                            import os
-                            import sys
-                            import time
-                            from pathlib import Path
-                            
-                            # Import the workspace manager utility
-                            from utils.workspace_manager import get_workspace_path
                             
                             # Get the workspace path using the utility function
                             workspace_path = get_workspace_path(self.group_chat_name, create_if_missing=True)

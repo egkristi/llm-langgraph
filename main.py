@@ -1,5 +1,15 @@
+"""Entry point for llm-langgraph."""
+
+import subprocess
+import sys
+
+
 def main():
-    print("Hello from llm-langgraph2!")
+    """Launch the Streamlit application."""
+    subprocess.run(
+        [sys.executable, "-m", "streamlit", "run", "src/app.py"],
+        check=True,
+    )
 
 
 if __name__ == "__main__":

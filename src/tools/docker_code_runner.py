@@ -13,7 +13,7 @@ from utils.workspace_manager import save_file, get_workspace_path, list_files
 # Configure logging
 logging.basicConfig(level=logging.INFO, 
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                   filename='/tmp/code_runner.log',
+                   filename=os.path.join(tempfile.gettempdir(), 'code_runner.log'),
                    filemode='a')
 
 # Dictionary to store information about running containers

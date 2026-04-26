@@ -1,6 +1,13 @@
-streamlit>=1.55.0
-langchain-core>=1.2.19
+langchain>=1.2.12
 langchain-community>=0.4.1
+langchain-core>=1.2.19
 langgraph>=1.1.2
+langchain-ollama>=1.0.1
 ollama>=0.6.1
+streamlit>=1.55.0
+docker>=7.1.0
+pyyaml>=6.0.3
+tenacity>=9.1.4
+typing-extensions>=4.15.0
 python-dotenv>=1.2.2
+jsonpatch>=1.33

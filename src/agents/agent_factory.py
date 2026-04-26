@@ -3,7 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.tools import BaseTool
-from langchain_classic.agents import create_react_agent, AgentExecutor
+from langchain.agents import create_react_agent, AgentExecutor
 
 import json
 from pathlib import Path
